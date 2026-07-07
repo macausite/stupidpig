@@ -409,3 +409,14 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
     </div>
   );
 }
+
+export async function getStaticPaths() {
+  const paths = gamesData.map(g => ({
+    params: { gameId: g.id }
+  }));
+  return { paths, fallback: false };
+}
+
+export async function getStaticProps() {
+  return { props: {} };
+}
