@@ -225,6 +225,38 @@
 			0% { box-shadow: 0 0 10px rgba(255, 51, 51, 0.3); }
 			100% { box-shadow: 0 0 20px rgba(255, 51, 51, 0.7); }
 		}
+
+		/* Mobile / Low Height Viewport Adjustments to prevent UI overlapping */
+		@media (max-width: 500px), (max-height: 500px) {
+			.options-grid {
+				bottom: 12px;
+				gap: 8px;
+			}
+			.slang-btn {
+				padding: 10px 8px;
+				font-size: 0.82rem;
+				border-radius: 6px;
+			}
+			.target-container {
+				top: 65px;
+				padding: 6px 16px;
+			}
+			.target-dest {
+				font-size: 1.2rem;
+			}
+			.hud-panel {
+				top: 8px;
+				left: 8px;
+				right: 8px;
+			}
+			.hud-card {
+				padding: 4px 10px;
+				font-size: 0.72rem;
+			}
+			.score-label {
+				font-size: 0.95rem;
+			}
+		}
 	</style>
 </head>
 <body>

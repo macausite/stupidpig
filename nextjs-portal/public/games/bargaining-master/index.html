@@ -243,6 +243,39 @@
 			color: #505050;
 			width: 40px;
 		}
+
+		/* Mobile / Low Height Viewport Adjustments */
+		@media (max-width: 500px), (max-height: 500px) {
+			.bargain-controls {
+				bottom: 12px;
+				padding: 10px;
+				gap: 8px;
+			}
+			.meter-track {
+				height: 20px;
+			}
+			.game-btn {
+				padding: 8px 24px;
+				font-size: 0.85rem;
+				border-radius: 6px;
+			}
+			.market-bubble {
+				top: 65px;
+				padding: 8px 16px;
+			}
+			.hud-panel {
+				top: 8px;
+				left: 8px;
+				right: 8px;
+			}
+			.hud-card {
+				padding: 4px 10px;
+				font-size: 0.72rem;
+			}
+			.score-label {
+				font-size: 0.95rem;
+			}
+		}
 	</style>
 </head>
 <body>

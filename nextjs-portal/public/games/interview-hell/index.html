@@ -251,6 +251,35 @@
 			color: #505050;
 			width: 40px;
 		}
+
+		/* Mobile / Low Height Viewport Adjustments */
+		@media (max-width: 500px), (max-height: 500px) {
+			.choices-panel {
+				bottom: 12px;
+				gap: 6px;
+			}
+			.choice-btn {
+				padding: 8px 12px;
+				font-size: 0.78rem;
+				border-radius: 6px;
+			}
+			.dialog-bubble {
+				top: 65px;
+				padding: 8px 16px;
+			}
+			.hud-panel {
+				top: 8px;
+				left: 8px;
+				right: 8px;
+			}
+			.hud-card {
+				padding: 4px 10px;
+				font-size: 0.72rem;
+			}
+			.score-label {
+				font-size: 0.95rem;
+			}
+		}
 	</style>
 </head>
 <body>
