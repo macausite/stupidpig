@@ -159,7 +159,7 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
+          <div className="download-grid">
             {/* LEFT COLUMN: TRAILER & SCREENSHOTS */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* VIDEO EMBED */}
@@ -334,7 +334,7 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
         </div>
 
         {/* CONTAINER HOLDING SANDBOX IFRAME & LEADERBOARD/CONTROLS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '16px', flex: 1 }}>
+        <div className="play-grid">
           <div className="play-container-wrapper">
             <UniversalGameWrapper
               gameUrl={game.url}
