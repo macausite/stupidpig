@@ -445,6 +445,15 @@
 		// Smoke particles
 		let particles = [];
 
+		// Scrolling city buildings parallax system
+		let cityBuildings = [
+			{ x: 50, w: 120, h: 180, color: '#06030c', sign: { text: "金記珠寶", color: '#00ffff', vertical: true } },
+			{ x: 260, w: 160, h: 220, color: '#090514', sign: { text: "生滾粥", color: '#ff00ff', vertical: false } },
+			{ x: 500, w: 140, h: 190, color: '#050308', sign: { text: "網吧摸魚", color: '#00ff66', vertical: true } },
+			{ x: 720, w: 180, h: 230, color: '#0a0718', sign: { text: "避風塘炒蟹", color: '#ff9900', vertical: false } }
+		];
+
+
 		const canvas = document.getElementById('game-canvas');
 		const ctx = canvas.getContext('2d');
 
@@ -563,7 +572,32 @@
 		// Animation Drawings
 		function drawScrollingBackground(ctx) {
 			// Scrolling neon city background
-			const speedFactor = isBraking ? 0 : speed;
+			const currentSpeed = isBraking ? speed * (1 - brakeTimer / 45) : speed;
+
+			// Update buildings positions in parallax
+			if (!isCamouflage) {
+				cityBuildings.forEach(b => {
+					b.x -= currentSpeed * 0.45;
+					if (b.x + b.w < 0) {
+						b.x = canvas.width + Math.random() * 100;
+						b.h = 140 + Math.random() * 110;
+						b.w = 90 + Math.random() * 90;
+						const colors = ['#06030c', '#090514', '#050308', '#0a0718'];
+						b.color = colors[Math.floor(Math.random() * colors.length)];
+						
+						const signs = [
+							{ text: "絲襪奶茶", color: "#ffdd00", vertical: true },
+							{ text: "菠蘿油", color: "#ff2a85", vertical: false },
+							{ text: "魚蛋粉", color: "#00f0ff", vertical: true },
+							{ text: "許留山", color: "#ff9f00", vertical: false },
+							{ text: "生滾粥", color: "#ff00ff", vertical: false },
+							{ text: "避風塘炒蟹", color: "#ff9900", vertical: false },
+							{ text: "金味烤肉", color: "#00ff66", vertical: true }
+						];
+						b.sign = signs[Math.floor(Math.random() * signs.length)];
+					}
+				});
+			}
 
 			// Nathan road ground
 			ctx.fillStyle = '#110d21';
@@ -577,45 +611,58 @@
 			ctx.lineTo(canvas.width, canvas.height * 0.72);
 			ctx.stroke();
 
-			// Neon neon storefront shapes
-			ctx.fillStyle = '#06030c';
-			ctx.fillRect(50, canvas.height * 0.15, 120, canvas.height * 0.4);
-			ctx.fillRect(250, canvas.height * 0.1, 160, canvas.height * 0.45);
-			ctx.fillRect(500, canvas.height * 0.2, 140, canvas.height * 0.35);
+			// Draw buildings
+			cityBuildings.forEach(b => {
+				ctx.fillStyle = b.color;
+				ctx.fillRect(b.x, canvas.height * 0.55 - b.h, b.w, b.h);
+				
+				ctx.strokeStyle = '#1a1427';
+				ctx.lineWidth = 2;
+				ctx.strokeRect(b.x, canvas.height * 0.55 - b.h, b.w, b.h);
 
-			// Draw neon signboards with glow
-			ctx.save();
-			ctx.shadowBlur = 10;
+				// Draw building windows (tiny dots)
+				ctx.fillStyle = 'rgba(255, 235, 59, 0.15)';
+				const rows = Math.floor(b.h / 30);
+				const cols = Math.floor(b.w / 25);
+				for (let r = 0; r < rows; r++) {
+					for (let c = 0; c < cols; c++) {
+						if ((r + c) % 3 === 0) { // structured window pattern
+							ctx.fillRect(b.x + 8 + c * 22, canvas.height * 0.55 - b.h + 10 + r * 25, 6, 8);
+						}
+					}
+				}
 
-			// Slogan 1: 金記珠寶
-			ctx.shadowColor = '#00ffff';
-			ctx.fillStyle = '#00ffff';
-			ctx.fillRect(80, canvas.height * 0.2, 18, 90);
-			ctx.fillStyle = '#050308';
-			ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
-			ctx.fillText("金", 83, canvas.height * 0.22);
-			ctx.fillText("記", 83, canvas.height * 0.25);
-			ctx.fillText("珠", 83, canvas.height * 0.28);
-			ctx.fillText("寶", 83, canvas.height * 0.31);
+				// Draw neon signboards with glow
+				if (b.sign) {
+					ctx.save();
+					ctx.shadowBlur = 10;
+					ctx.shadowColor = b.sign.color;
+					ctx.fillStyle = b.sign.color;
 
-			// Slogan 2: 順德生滾粥
-			ctx.shadowColor = '#ff00ff';
-			ctx.fillStyle = '#ff00ff';
-			ctx.fillRect(300, canvas.height * 0.15, 80, 26);
-			ctx.fillStyle = '#050308';
-			ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
-			ctx.fillText("生滾粥", 312, canvas.height * 0.18);
+					if (b.sign.vertical) {
+						const signX = b.x + b.w * 0.3;
+						const signY = canvas.height * 0.55 - b.h + 15;
+						ctx.fillRect(signX, signY, 18, b.sign.text.length * 16 + 10);
 
-			// Slogan 3: 網吧摸魚
-			ctx.shadowColor = '#00ff66';
-			ctx.fillStyle = '#00ff66';
-			ctx.fillRect(540, canvas.height * 0.22, 22, 70);
-			ctx.fillStyle = '#050308';
-			ctx.fillText("網", 545, canvas.height * 0.24);
-			ctx.fillText("吧", 545, canvas.height * 0.27);
-			ctx.fillText("魚", 545, canvas.height * 0.3);
+						ctx.fillStyle = '#050308';
+						ctx.shadowBlur = 0;
+						ctx.font = 'bold 11px "Microsoft YaHei", sans-serif';
+						for (let i = 0; i < b.sign.text.length; i++) {
+							ctx.fillText(b.sign.text[i], signX + 3, signY + 15 + i * 16);
+						}
+					} else {
+						const signX = b.x + b.w * 0.15;
+						const signY = canvas.height * 0.55 - b.h + 15;
+						ctx.fillRect(signX, signY, b.w * 0.7, 22);
 
-			ctx.restore();
+						ctx.fillStyle = '#050308';
+						ctx.shadowBlur = 0;
+						ctx.font = 'bold 11px "Microsoft YaHei", sans-serif';
+						ctx.fillText(b.sign.text, signX + 6, signY + 15);
+					}
+					ctx.restore();
+				}
+			});
 		}
 
 		function drawMinibus(ctx) {
