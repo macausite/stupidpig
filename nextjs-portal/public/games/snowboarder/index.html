@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>Snowboarder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="favicon.png" rel="shortcut icon">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas.cstyle {
+      border: 0 none;
+      outline: 0;
+      background-color: #000;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas class="cstyle" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
+
+  <script>
+    var currentScore = 0;
+    var gameId = 'snowboarder';
+
+    // Set up MutationObserver to watch score updates in Document Title
+    const targetTitle = document.querySelector('title');
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        const titleText = mutation.target.textContent;
+        // Parse: "Snowboarder - SCORE X"
+        const match = titleText.match(/SCORE\s*(\d+)/i);
+        if (match) {
+          const newScore = parseInt(match[1], 10);
+          if (newScore !== currentScore) {
+            currentScore = newScore;
+            console.log(`[Snowboarder Telemetry] Score update detected: ${currentScore}`);
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({
+                type: 'STUPIDPIG_SCORE_UPDATED',
+                gameId: gameId,
+                score: currentScore
+              }, '*');
+            }
+          }
+        }
+      });
+    });
+    observer.observe(targetTitle, { subtree: true, characterData: true, childList: true });
+
+    // Emscripten Module Definition
+    var Module = {
+      canvas: document.getElementById("canvas"),
+      onRuntimeInitialized: function() {
+        console.log("[Snowboarder] WebAssembly module runtime initialized!");
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'STUPIDPIG_GAME_LOADED',
+            gameId: gameId
+          }, '*');
+        }
+      },
+      print: (function() {
+        return function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.log("[Snowboarder Game Console] " + text);
+
+          // Listen for death score output print: "YOU DIED, SCORE X"
+          if (text.indexOf('YOU DIED') !== -1 && text.indexOf('SCORE') !== -1) {
+            const match = text.match(/SCORE\s*(\d+)/i);
+            if (match) {
+              const finalScore = parseInt(match[1], 10);
+              console.log(`[Snowboarder Telemetry] Game Over reported. Final score: ${finalScore}`);
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                  type: 'STUPIDPIG_GAME_OVER',
+                  gameId: gameId,
+                  score: finalScore
+                }, '*');
+              }
+            }
+          }
+        };
+      })(),
+      printErr: function(text) {
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        console.error("[Snowboarder Game Stderr] " + text);
+      }
+    };
+
+    // Global Restart Event listener
+    window.addEventListener("message", function(event) {
+      if (event.data && event.data.type === "STUPIDPIG_RESTART_GAME") {
+        console.log("[Snowboarder] Restarting via page reload signal...");
+        window.location.reload();
+      }
+    });
+  </script>
+  <script async src="index.js"></script>
+</body>
+</html>

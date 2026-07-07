@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>廟街求籤開運 (Temple Street Fortune Chim)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-red: #ff2a2a;
+			--neon-amber: #ffaa00;
+			--neon-purple: #c77dff;
+			--gold: #ffd700;
+			--temple-red: #b32424;
+			--wood-dark: #5c3a21;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: #0d0a1b;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #07050e;
+			border: 2px solid rgba(255, 42, 42, 0.35);
+			border-radius: 12px;
+			box-shadow: 0 0 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(255, 42, 42, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* UI Overlay Elements */
+		.ui-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.stats-card {
+			background: rgba(13, 10, 27, 0.85);
+			border: 1px solid rgba(255, 42, 42, 0.4);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+			backdrop-filter: blur(5px);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: 800;
+			font-size: 1.25rem;
+			font-family: monospace;
+			text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+		}
+
+		.btn-group {
+			position: absolute;
+			bottom: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			gap: 15px;
+			z-index: 10;
+		}
+
+		.game-btn {
+			background: linear-gradient(135deg, #cc2929 0%, #801a1a 100%);
+			color: #fff;
+			border: 1px solid rgba(255,255,255,0.25);
+			padding: 10px 22px;
+			border-radius: 8px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 15px rgba(204, 41, 41, 0.4);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.game-btn:hover {
+			transform: scale(1.05);
+			background: linear-gradient(135deg, #ff3333 0%, #b32424 100%);
+			box-shadow: 0 4px 20px rgba(255, 51, 51, 0.55);
+		}
+
+		.game-btn:active {
+			transform: scale(0.98);
+		}
+
+		/* Fortune Scroll Book / Sheet */
+		.scroll-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(7, 5, 14, 0.88);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 100;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+		}
+
+		.scroll-content {
+			background: #fbf5e6; /* Traditional Chinese yellow paper */
+			border: 8px double #a82e2e;
+			outline: 2px solid #541717;
+			border-radius: 12px;
+			padding: 24px;
+			width: 90%;
+			max-width: 420px;
+			color: #3d1c1c;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+			text-align: center;
+			position: relative;
+		}
+
+		.scroll-title {
+			color: #a82e2e;
+			font-size: 1.6rem;
+			font-weight: 800;
+			margin-bottom: 12px;
+			border-bottom: 2px solid #a82e2e;
+			padding-bottom: 8px;
+		}
+
+		.scroll-type {
+			background-color: #a82e2e;
+			color: #fbf5e6;
+			font-size: 1.1rem;
+			font-weight: 800;
+			display: inline-block;
+			padding: 4px 16px;
+			border-radius: 4px;
+			margin-bottom: 15px;
+			letter-spacing: 2px;
+		}
+
+		.scroll-poem {
+			font-family: 'Georgia', serif;
+			font-style: italic;
+			font-weight: bold;
+			font-size: 1.15rem;
+			line-height: 1.8;
+			color: #541717;
+			margin: 15px 0;
+			padding: 10px;
+			border-top: 1px dashed rgba(168, 46, 46, 0.3);
+			border-bottom: 1px dashed rgba(168, 46, 46, 0.3);
+		}
+
+		.scroll-desc {
+			font-size: 0.95rem;
+			line-height: 1.6;
+			text-align: left;
+			margin-top: 15px;
+			background: rgba(168, 46, 46, 0.05);
+			padding: 12px;
+			border-radius: 6px;
+		}
+
+		.desc-item {
+			margin-bottom: 6px;
+		}
+		.desc-item span {
+			font-weight: bold;
+			color: #a82e2e;
+			margin-right: 6px;
+		}
+
+		/* Excel Camouflage Sheet */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-toolbar-item {
+			cursor: pointer;
+			color: #323130;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+			background-color: #f3f2f1;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			border: 1px solid #d2d0ce;
+			padding: 6px;
+			font-size: 0.75rem;
+			color: #323130;
+			text-align: center;
+			font-weight: normal;
+		}
+
+		.excel-table td {
+			border: 1px solid #e1dfdd;
+			padding: 6px;
+			font-size: 0.8rem;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			font-size: 0.75rem;
+			color: #505050;
+			border: 1px solid #d2d0ce !important;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<!-- Canvas -->
+		<canvas id="game-canvas"></canvas>
+
+		<!-- UI stats overlay -->
+		<div class="ui-panel">
+			<div class="stats-card">
+				<div>⛩️ 天后宮神籤 (Tin Hau Temple Chim)</div>
+				<div style="margin-top: 4px;">開運財富: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="stats-card" style="text-align: right;">
+				<div id="game-state-label" style="font-weight: bold; color: var(--neon-amber);">點擊籤筒求籤</div>
+				<div style="margin-top: 4px; font-size: 0.75rem; color: #8c89ad;">按 [空格鍵] 快速扮工</div>
+			</div>
+		</div>
+
+		<!-- UI Control buttons -->
+		<div class="btn-group">
+			<button class="game-btn" id="shake-btn">
+				🏮 搖動籤筒 (Shake)
+			</button>
+			<button class="game-btn" id="camo-btn" style="background: linear-gradient(135deg, #107c41 0%, #0c5e31 100%);">
+				💼 扮工模式
+			</button>
+		</div>
+
+		<!-- Fortune Scroll Display Modal -->
+		<div class="scroll-overlay" id="scroll-modal">
+			<div class="scroll-content">
+				<div class="scroll-title" id="chim-no">
+					第 壹 籤
+				</div>
+				<div class="scroll-type" id="chim-luck">
+					上上大吉
+				</div>
+				<div class="scroll-poem" id="chim-poem">
+					「籤詩載入中」
+				</div>
+				<div class="scroll-desc">
+					<div class="desc-item"><span>解曰：</span><span id="chim-explain" style="font-weight: normal; color: #3d1c1c;">財運亨通，宜摸魚。</span></div>
+					<div class="desc-item" style="margin-top: 10px;"><span>宜：</span><span id="chim-should" style="font-weight: normal; color: #2e6930;">摸魚、放假、打機</span></div>
+					<div class="desc-item"><span>忌：</span><span id="chim-avoid" style="font-weight: normal; color: #a82e2e;">加班、開會、加辛</span></div>
+				</div>
+				<button class="game-btn" id="close-scroll-btn" style="margin: 20px auto 0 auto; padding: 8px 24px;">
+					謝神領籤 (Acknowledge)
+				</button>
+			</div>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - StupidPig_Fortune_Prediction_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span class="excel-toolbar-item" style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span class="excel-toolbar-item">常用</span>
+				<span class="excel-toolbar-item">插入</span>
+				<span class="excel-toolbar-item">公式</span>
+				<span class="excel-toolbar-item">資料</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th style="width: 40px;"></th>
+							<th style="width: 250px;">A (預測項目)</th>
+							<th style="width: 150px;">B (本局求籤結果)</th>
+							<th style="width: 150px;">C (期望目標)</th>
+							<th style="width: 200px;">D (開運評估)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">廟街開運求籤大數據</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>已求得籤號 (第幾籤)</td>
+							<td id="excel-chim-number" style="font-weight: bold; color: #0071e3;">無</td>
+							<td>上上</td>
+							<td style="color: #107c41; font-weight: bold;">開運加持</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>吉凶評定等級</td>
+							<td id="excel-chim-luck" style="font-weight: bold; color: #0071e3;">無</td>
+							<td>大吉</td>
+							<td style="color: #ff8c00; font-weight: bold;">神明加持</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>總開運財富點</td>
+							<td id="excel-score-val" style="font-weight: bold; color: #0071e3;">0</td>
+							<td>10000</td>
+							<td style="color: #107c41; font-weight: bold;">摸魚大師</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>宜做事項</td>
+							<td id="excel-chim-should" style="font-weight: bold; color: #2e6930;">無</td>
+							<td>放假、摸魚</td>
+							<td style="color: #107c41; font-weight: bold;">宜即刻實施</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">6</td>
+							<td>忌諱事項</td>
+							<td id="excel-chim-avoid" style="font-weight: bold; color: #a82e2e;">無</td>
+							<td>加班、加辛</td>
+							<td style="color: #ff3366; font-weight: bold;">需極力避免</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Setup Audio Synth using Web Audio API
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) {
+				audioCtx = new AudioContext();
+			}
+			if (audioCtx.state === 'suspended') {
+				audioCtx.resume();
+			}
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+
+				const now = audioCtx.currentTime;
+
+				if (type === 'rattle') {
+					// Rattling bamboo sticks sound (multiple wood clicks)
+					const count = 4;
+					for (let i = 0; i < count; i++) {
+						const clickTime = now + i * 0.05 + Math.random() * 0.02;
+						const osc = audioCtx.createOscillator();
+						osc.type = 'triangle';
+						osc.frequency.setValueAtTime(300 + Math.random() * 150, clickTime);
+						osc.frequency.exponentialRampToValueAtTime(100, clickTime + 0.03);
+
+						const gain = audioCtx.createGain();
+						gain.gain.setValueAtTime(0.15, clickTime);
+						gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.03);
+
+						osc.connect(gain);
+						gain.connect(audioCtx.destination);
+						osc.start(clickTime);
+						osc.stop(clickTime + 0.04);
+					}
+				} else if (type === 'drop') {
+					// Bamboo stick falls out (solid wooden click)
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(180, now);
+					osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.4, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.1);
+
+				} else if (type === 'kapo') {
+					// Bouncing Kapo block clatter (dull wood block hit)
+					const count = 3;
+					for (let i = 0; i < count; i++) {
+						const hitTime = now + i * 0.08;
+						const osc = audioCtx.createOscillator();
+						osc.type = 'sawtooth';
+						osc.frequency.setValueAtTime(220, hitTime);
+						osc.frequency.exponentialRampToValueAtTime(40, hitTime + 0.05);
+
+						const filter = audioCtx.createBiquadFilter();
+						filter.type = 'lowpass';
+						filter.frequency.setValueAtTime(500, hitTime);
+
+						const gain = audioCtx.createGain();
+						gain.gain.setValueAtTime(0.3 / (i + 1), hitTime);
+						gain.gain.exponentialRampToValueAtTime(0.001, hitTime + 0.05);
+
+						osc.connect(filter);
+						filter.connect(gain);
+						gain.connect(audioCtx.destination);
+						osc.start(hitTime);
+						osc.stop(hitTime + 0.06);
+					}
+				} else if (type === 'success') {
+					// Auspicious temple bell chime (gong + bell)
+					const osc = audioCtx.createOscillator();
+					const osc2 = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(523.25, now); // C5
+					osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.2); // E5
+
+					osc2.type = 'triangle';
+					osc2.frequency.setValueAtTime(261.63, now); // C4
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.35, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+					osc.connect(gain);
+					osc2.connect(gain);
+					gain.connect(audioCtx.destination);
+
+					osc.start(now);
+					osc2.start(now);
+					osc.stop(now + 1.2);
+					osc2.stop(now + 1.2);
+
+				} else if (type === 'camo') {
+					// Digital keyboard type sound
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(400, now);
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.12, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.1);
+				}
+			} catch(e) {
+				console.warn('Audio synthesis failed:', e);
+			}
+		}
+
+		// Game state
+		let score = 0;
+		let totalChims = 0;
+		let gameState = 'ready'; // ready, shaking, thrown, showing
+		let isCamouflage = false;
+
+		// Animation variables
+		let bucketAngle = 0;
+		let bucketOffset = {x: 0, y: 0};
+		let bucketShakeTimer = 0;
+		let drawnStickY = 0;
+		let kapoLeft = {x: 0, y: 0, rot: 0, type: 'up'};
+		let kapoRight = {x: 0, y: 0, rot: 0, type: 'down'};
+		let kapoThrowTimer = 0;
+
+		// Particles
+		let particles = [];
+		let textFloats = [];
+
+		// Chinese Tin Hau Temple Chim Database (10 comical cards)
+		const CHIMS_DB = [
+			{
+				no: "第 壹 籤",
+				luck: "上上大吉 (Great Fortune)",
+				poem: "「豬籠入水運氣通，返工打機路路紅。老闆睇見哈笑笑，年終獎金袋中融。」",
+				explain: "財運極佳，工作極其輕鬆順利，深受神明眷顧。",
+				should: "要求加薪、購買彩票、提早放工",
+				avoid: "主動加班、回覆工作電郵、開無謂會",
+				bonus: 3000
+			},
+			{
+				no: "第 拾 籤",
+				luck: "大吉 (Very Lucky)",
+				poem: "「返工遲到無人知，打卡鐘壞真合時。經理開會吹水去，半日摸魚樂滋滋。」",
+				explain: "逢凶化吉，避開所有主管耳目，摸魚事半功倍。",
+				should: "午睡兩小時、打機摸魚、買下午茶",
+				avoid: "準時開會、主動匯報進度、認真工作",
+				bonus: 2000
+			},
+			{
+				no: "第 貳拾 籤",
+				luck: "中吉 (Medium Lucky)",
+				poem: "「滑鼠點擊響叮噹，螢幕常開試算表。縱使經理身旁過，神定氣閒扮工高。」",
+				explain: "扮工技能爐火純青，即便面對突擊檢查亦能化險為夷。",
+				should: "開啟Excel遮蔽、網購、發呆",
+				avoid: "承接新專案、主動加班、做義工",
+				bonus: 1500
+			},
+			{
+				no: "第 參拾捌 籤",
+				luck: "中平 (Average / Fair)",
+				poem: "「日落西山水自流，返工放工幾時休。平生不做加班鬼，快活逍遙又一秋。」",
+				explain: "平淡是福，運勢穩健。切忌強求出頭，順應自然即可。",
+				should: "準時放工、飲熱水、看八卦新聞",
+				avoid: "出風頭、與同事爭論、熬夜加班",
+				bonus: 1000
+			},
+			{
+				no: "第 伍拾 籤",
+				luck: "中下 (Uncertain / Fair)",
+				poem: "「電腦藍屏不可支，系統更新真會意。工作半途皆散去，一杯奶茶渡餘時。」",
+				explain: "會遇上電腦故障等意外障礙，雖能趁機休息，但需防範進度落後。",
+				should: "請IT維修電腦、喝茶歇息、閒聊",
+				avoid: "強行重啟電腦、儲存未完成檔案",
+				bonus: 500
+			},
+			{
+				no: "第 陸拾肆 籤",
+				luck: "下下 (Misfortune / Bad)",
+				poem: "「星期五晚臨放工，突來急件要加工。老細狂Call催死期，鑊氣重重兩眼紅。」",
+				explain: "運勢極差，逢星期五必定招惹是非，工作量劇增。",
+				should: "裝病請假、關閉手機、閃避老闆",
+				avoid: "接聽未知電話、答應星期六加班",
+				bonus: 100
+			}
+		];
+		let currentChim = CHIMS_DB[0];
+
+		// Canvas setup
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		// Element hooks
+		const scoreVal = document.getElementById('score-val');
+		const stateLabel = document.getElementById('game-state-label');
+		const shakeBtn = document.getElementById('shake-btn');
+		const camoBtn = document.getElementById('camo-btn');
+
+		const scrollModal = document.getElementById('scroll-modal');
+		const chimNo = document.getElementById('chim-no');
+		const chimLuck = document.getElementById('chim-luck');
+		const chimPoem = document.getElementById('chim-poem');
+		const chimExplain = document.getElementById('chim-explain');
+		const chimShould = document.getElementById('chim-should');
+		const chimAvoid = document.getElementById('chim-avoid');
+		const closeScrollBtn = document.getElementById('close-scroll-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelChimNumber = document.getElementById('excel-chim-number');
+		const excelChimLuck = document.getElementById('excel-chim-luck');
+		const excelScoreVal = document.getElementById('excel-score-val');
+		const excelChimShould = document.getElementById('excel-chim-should');
+		const excelChimAvoid = document.getElementById('excel-chim-avoid');
+
+		function updateUI() {
+			scoreVal.textContent = score;
+
+			if (gameState === 'ready') {
+				stateLabel.textContent = '點擊籤筒求籤';
+				stateLabel.style.color = 'var(--neon-amber)';
+				shakeBtn.textContent = '🏮 搖動籤筒 (Shake)';
+			} else if (gameState === 'shaking') {
+				stateLabel.textContent = '神明指引中...';
+				stateLabel.style.color = '#fff';
+				shakeBtn.textContent = '搖動中...';
+			} else if (gameState === 'thrown') {
+				stateLabel.textContent = '請擲筊確認 (Throw)';
+				stateLabel.style.color = 'var(--gold)';
+				shakeBtn.textContent = '☯️ 擲筊杯 (Throw Kapo)';
+			} else if (gameState === 'showing') {
+				stateLabel.textContent = '神明降臨！已領籤';
+				stateLabel.style.color = '#00ff66';
+				shakeBtn.textContent = '再次求籤 (Retry)';
+			}
+
+			// Map Excel fields
+			excelScoreVal.textContent = score;
+			if (gameState === 'showing') {
+				excelChimNumber.textContent = currentChim.no;
+				excelChimLuck.textContent = currentChim.luck.split(' ')[0];
+				excelChimShould.textContent = currentChim.should;
+				excelChimAvoid.textContent = currentChim.avoid;
+			}
+		}
+
+		// Particles Systems
+		function spawnSparks(x, y, color = '#ff3333') {
+			for (let i = 0; i < 20; i++) {
+				particles.push({
+					x: x,
+					y: y,
+					vx: (Math.random() - 0.5) * 6,
+					vy: (Math.random() - 0.7) * 6 - 2,
+					radius: Math.random() * 3 + 1,
+					alpha: 1.0,
+					decay: Math.random() * 0.03 + 0.015,
+					color: color
+				});
+			}
+		}
+
+		function spawnIncenseSmoke() {
+			// Center of incense pot inside Tin Hau Temple
+			const potX = canvas.width * 0.2;
+			const potY = canvas.height * 0.78;
+			if (Math.random() < 0.15) {
+				particles.push({
+					x: potX + (Math.random() - 0.5) * 12,
+					y: potY,
+					vx: (Math.random() - 0.5) * 0.6,
+					vy: -Math.random() * 1.6 - 0.4,
+					radius: Math.random() * 6 + 3,
+					alpha: 0.5,
+					decay: 0.004,
+					color: 'rgba(200, 200, 220, 0.4)',
+					isSmoke: true
+				});
+			}
+		}
+
+		function spawnChant(text, x, y) {
+			textFloats.push({
+				text: text,
+				x: x,
+				y: y,
+				vy: -1.0,
+				alpha: 1.0,
+				life: 100,
+				fontSize: 16,
+				color: '#ffdd00'
+			});
+		}
+
+		// Environment Drawings
+		function drawIncense(ctx) {
+			const potX = canvas.width * 0.2;
+			const potY = canvas.height * 0.78;
+
+			// Incense burner base
+			ctx.fillStyle = '#bfa55a';
+			ctx.beginPath();
+			ctx.ellipse(potX, potY + 10, 25, 12, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Incense burner bowl
+			ctx.fillStyle = '#ffd700';
+			ctx.beginPath();
+			ctx.arc(potX, potY, 18, 0, Math.PI, false);
+			ctx.fill();
+
+			// Incense sticks
+			ctx.strokeStyle = '#5c3a21';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(potX - 6, potY); ctx.lineTo(potX - 12, potY - 32);
+			ctx.moveTo(potX, potY); ctx.lineTo(potX, potY - 38);
+			ctx.moveTo(potX + 6, potY); ctx.lineTo(potX + 10, potY - 30);
+			ctx.stroke();
+
+			// Glow red tips
+			ctx.fillStyle = '#ff2a2a';
+			ctx.beginPath();
+			ctx.arc(potX - 12, potY - 32, 2.5, 0, Math.PI*2);
+			ctx.arc(potX, potY - 38, 2.5, 0, Math.PI*2);
+			ctx.arc(potX + 10, potY - 30, 2.5, 0, Math.PI*2);
+			ctx.fill();
+		}
+
+		function drawBackground(ctx) {
+			// Dark purple temple hall gradient
+			const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+			gradient.addColorStop(0, '#0c071a');
+			gradient.addColorStop(1, '#05030b');
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw traditional temple red pillars on the sides
+			ctx.fillStyle = '#801a1a';
+			ctx.fillRect(0, 0, 45, canvas.height);
+			ctx.fillRect(canvas.width - 45, 0, 45, canvas.height);
+			ctx.strokeStyle = '#3d0d0d';
+			ctx.lineWidth = 3;
+			ctx.strokeRect(0, 0, 45, canvas.height);
+			ctx.strokeRect(canvas.width - 45, 0, 45, canvas.height);
+
+			// Draw temple roof beam line
+			ctx.fillStyle = '#611414';
+			ctx.fillRect(0, 0, canvas.width, 40);
+			ctx.strokeStyle = '#3d0d0d';
+			ctx.strokeRect(0, 0, canvas.width, 40);
+
+			// Traditional Chinese Hanging lanterns (廟街紅燈籠)
+			drawLantern(ctx, canvas.width * 0.15, 75);
+			drawLantern(ctx, canvas.width * 0.85, 75);
+
+			// Temple altar table
+			const tableY = canvas.height * 0.82;
+			ctx.fillStyle = '#402011';
+			ctx.fillRect(60, tableY, canvas.width - 120, 110);
+			ctx.strokeStyle = '#29140a';
+			ctx.lineWidth = 5;
+			ctx.strokeRect(60, tableY, canvas.width - 120, 110);
+
+			// Altar table border details
+			ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
+			ctx.fillRect(70, tableY + 12, canvas.width - 140, 6);
+
+			// Draw incense pot
+			drawIncense(ctx);
+		}
+
+		function drawLantern(ctx, x, y) {
+			// Lantern wire
+			ctx.strokeStyle = '#333';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, y);
+			ctx.stroke();
+
+			// Glow shadow
+			ctx.save();
+			ctx.shadowBlur = 20;
+			ctx.shadowColor = '#ff3333';
+
+			// Red lantern body
+			ctx.fillStyle = '#ff2a2a';
+			ctx.beginPath();
+			ctx.ellipse(x, y + 25, 22, 28, 0, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.restore();
+
+			// Gold top/bottom caps
+			ctx.fillStyle = '#ffd700';
+			ctx.fillRect(x - 12, y - 5, 24, 6);
+			ctx.fillRect(x - 12, y + 50, 24, 6);
+
+			// Tassels hanging at bottom
+			ctx.strokeStyle = '#ff2a2a';
+			ctx.lineWidth = 3;
+			ctx.beginPath();
+			ctx.moveTo(x, y + 56);
+			ctx.lineTo(x, y + 80);
+			ctx.stroke();
+		}
+
+		function drawBucket(ctx) {
+			const bucketX = canvas.width * 0.5 + bucketOffset.x;
+			const bucketY = canvas.height * 0.65 + bucketOffset.y;
+
+			ctx.save();
+			ctx.translate(bucketX, bucketY);
+			ctx.rotate((bucketAngle * Math.PI) / 180);
+
+			// Draw bamboo fortune sticks inside bucket (籤詩竹籤)
+			ctx.fillStyle = '#e8c892';
+			ctx.strokeStyle = '#bfa16f';
+			ctx.lineWidth = 1.5;
+
+			const sticksCount = 18;
+			for (let i = 0; i < sticksCount; i++) {
+				ctx.save();
+				// Fan out sticks randomly inside bucket
+				const angleOffset = -15 + i * 1.8 + (Math.sin(i + bucketShakeTimer * 0.8) * 1.5);
+				ctx.rotate((angleOffset * Math.PI) / 180);
+
+				// Draw stick shape
+				ctx.beginPath();
+				ctx.rect(-2.5, -95, 5, 80);
+				ctx.fill();
+				ctx.stroke();
+
+				// Red tip of stick
+				ctx.fillStyle = '#ff2a2a';
+				ctx.fillRect(-2.5, -95, 5, 12);
+				ctx.restore();
+			}
+
+			// Draw single drawn stick sliding out
+			if (gameState === 'shaking' && bucketShakeTimer > 75) {
+				// Stick sliding upwards out of bucket
+				ctx.save();
+				ctx.translate(-4, -90 - drawnStickY);
+				ctx.fillStyle = '#ffd700';
+				ctx.fillRect(-3, -20, 6, 80);
+				ctx.fillStyle = '#ff2a2a';
+				ctx.fillRect(-3, -20, 6, 12);
+				ctx.restore();
+			} else if (gameState === 'thrown' || gameState === 'showing') {
+				// Draping flat on the table
+				// It will be drawn separately on the table in drawBackground or drawTableSticks
+			}
+
+			// Draw Bamboo Bucket Cylinder
+			// Front cylinder face
+			ctx.fillStyle = '#8a3324'; // Red-brown lacquer wood
+			ctx.beginPath();
+			ctx.moveTo(-25, -60);
+			ctx.lineTo(25, -60);
+			ctx.lineTo(20, 20);
+			ctx.lineTo(-20, 20);
+			ctx.closePath();
+			ctx.fill();
+
+			ctx.strokeStyle = '#b5432f';
+			ctx.lineWidth = 3;
+			ctx.stroke();
+
+			// Gold rings / bands on bucket
+			ctx.fillStyle = '#ffd700';
+			ctx.fillRect(-24, -45, 48, 5);
+			ctx.fillRect(-21, 0, 42, 5);
+
+			// Chinese calligraphy on bucket: '天后宮'
+			ctx.fillStyle = '#ffd700';
+			ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
+			ctx.textAlign = 'center';
+			ctx.fillText("天", 0, -22);
+			ctx.fillText("后", 0, -8);
+			ctx.fillText("宮", 0, 6);
+
+			ctx.restore();
+
+			// Draw the stick resting on table if thrown/showing
+			if (gameState === 'thrown' || gameState === 'showing') {
+				const stickX = canvas.width * 0.5;
+				const stickY = canvas.height * 0.84;
+
+				ctx.save();
+				ctx.translate(stickX, stickY);
+				ctx.rotate((15 * Math.PI) / 180);
+
+				// Draw golden stick resting on the altar
+				ctx.fillStyle = '#ffd700';
+				ctx.strokeStyle = '#b89200';
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.rect(-35, -4, 70, 8);
+				ctx.fill();
+				ctx.stroke();
+
+				// Red tip
+				ctx.fillStyle = '#ff2a2a';
+				ctx.fillRect(-35, -4, 12, 8);
+				ctx.restore();
+			}
+		}
+
+		function drawKapoBlocks(ctx) {
+			if (gameState !== 'thrown' && gameState !== 'showing' && kapoThrowTimer === 0) return;
+
+			// Kapo (茭杯) wooden blocks - red-brown crescent shapes
+			// Bouncing animation coordinate handling
+			let lX = canvas.width * 0.38 + kapoLeft.x;
+			let lY = canvas.height * 0.85 + kapoLeft.y;
+			let rX = canvas.width * 0.62 + kapoRight.x;
+			let rY = canvas.height * 0.85 + kapoRight.y;
+
+			// Left Kapo
+			ctx.save();
+			ctx.translate(lX, lY);
+			ctx.rotate((kapoLeft.rot * Math.PI) / 180);
+			drawSingleKapo(ctx, kapoLeft.type);
+			ctx.restore();
+
+			// Right Kapo
+			ctx.save();
+			ctx.translate(rX, rY);
+			ctx.rotate((kapoRight.rot * Math.PI) / 180);
+			drawSingleKapo(ctx, kapoRight.type);
+			ctx.restore();
+		}
+
+		function drawSingleKapo(ctx, type) {
+			// Draw traditional wooden block: Crescent moon shape
+			ctx.fillStyle = '#a32929';
+			ctx.strokeStyle = '#5e1717';
+			ctx.lineWidth = 2;
+
+			ctx.beginPath();
+			if (type === 'up') {
+				// Convex face (Curved up)
+				ctx.arc(0, 0, 16, 0, Math.PI, true);
+				ctx.quadraticCurveTo(0, 6, -16, 0);
+			} else {
+				// Flat face (Flat bottom moon)
+				ctx.arc(0, 0, 16, 0, Math.PI, false);
+				ctx.quadraticCurveTo(0, -6, -16, 0);
+			}
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Inner wooden grain
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+			ctx.beginPath();
+			ctx.arc(0, 0, 10, 0, Math.PI, type !== 'up');
+			ctx.stroke();
+		}
+
+		function updateParticles() {
+			for (let i = particles.length - 1; i >= 0; i--) {
+				const p = particles[i];
+				p.x += p.vx;
+				p.y += p.vy;
+				p.alpha -= p.decay;
+
+				if (p.isSmoke) {
+					p.vx += (Math.random() - 0.5) * 0.15;
+					p.radius += 0.04;
+				}
+
+				if (p.alpha <= 0) {
+					particles.splice(i, 1);
+				}
+			}
+
+			for (let i = textFloats.length - 1; i >= 0; i--) {
+				const t = textFloats[i];
+				t.y += t.vy;
+				t.life--;
+				if (t.life <= 0) {
+					textFloats.splice(i, 1);
+				}
+			}
+		}
+
+		function drawParticles(ctx) {
+			particles.forEach(p => {
+				ctx.save();
+				ctx.globalAlpha = p.alpha;
+				ctx.fillStyle = p.color;
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.restore();
+			});
+
+			ctx.textAlign = 'center';
+			textFloats.forEach(t => {
+				ctx.save();
+				ctx.globalAlpha = Math.min(1.0, t.life / 20);
+				ctx.fillStyle = t.color;
+				ctx.font = `bold ${t.fontSize}px Arial`;
+				ctx.shadowColor = '#000';
+				ctx.shadowBlur = 3;
+				ctx.fillText(t.text, t.x, t.y);
+				ctx.restore();
+			});
+		}
+
+		// Shaking simulation
+		function startShaking() {
+			if (gameState === 'shaking' || isCamouflage) return;
+
+			if (gameState === 'showing') {
+				// Reset to shake again
+				gameState = 'ready';
+				updateUI();
+				return;
+			}
+
+			if (gameState === 'thrown') {
+				// Player throws Kapo blocks
+				throwKapo();
+				return;
+			}
+
+			gameState = 'shaking';
+			bucketShakeTimer = 0;
+			drawnStickY = 0;
+			updateUI();
+		}
+
+		function throwKapo() {
+			gameState = 'throwing_kapo';
+			kapoThrowTimer = 1;
+			playSound('kapo');
+		}
+
+		function finalizeKapoResult() {
+			// Pick a random chim from the DB
+			currentChim = CHIMS_DB[Math.floor(Math.random() * CHIMS_DB.length)];
+
+			// Determine Kapo block orientations (聖杯 / 笑杯 / 陰杯)
+			// On the altar Tin Hau Temple, the drawn stick needs a "聖杯" (one convex, one flat) to confirm!
+			// For fun, we always generate a "聖杯" (Divine validation) after a short rattle, or let them get it on first try!
+			kapoLeft.type = 'up';
+			kapoRight.type = 'down'; // One flat, one round = 聖杯 (Validated!)
+
+			playSound('success');
+			spawnSparks(canvas.width * 0.5, canvas.height * 0.8, '#ffdd00');
+
+			// Add score
+			score += currentChim.bonus;
+			totalChims++;
+
+			// Show Scroll Modal
+			setTimeout(() => {
+				gameState = 'showing';
+				// Set scroll modal texts
+				document.getElementById('chim-no').textContent = currentChim.no;
+				document.getElementById('chim-luck').textContent = currentChim.luck;
+				document.getElementById('chim-poem').textContent = currentChim.poem;
+				document.getElementById('chim-explain').textContent = currentChim.explain;
+				document.getElementById('chim-should').textContent = currentChim.should;
+				document.getElementById('chim-avoid').textContent = currentChim.avoid;
+
+				scrollModal.style.display = 'flex';
+				setTimeout(() => scrollModal.style.opacity = 1, 50);
+
+				updateUI();
+				submitScoreToParent(score);
+			}, 600);
+		}
+
+		// Animation frame loop
+		function gameLoop() {
+			// Ambient Incense Coils
+			spawnIncenseSmoke();
+
+			// Update particles
+			updateParticles();
+
+			// Handle Shaking rattle
+			if (gameState === 'shaking') {
+				bucketShakeTimer++;
+
+				// Rotate and slide bucket back and forth
+				bucketAngle = Math.sin(bucketShakeTimer * 0.8) * 12;
+				bucketOffset.x = Math.cos(bucketShakeTimer * 1.2) * 8;
+				bucketOffset.y = Math.sin(bucketShakeTimer * 0.9) * 4;
+
+				// Make sound rattles
+				if (bucketShakeTimer % 6 === 0) {
+					playSound('rattle');
+				}
+
+				// Risen stick animation
+				if (bucketShakeTimer > 60) {
+					drawnStickY = Math.min(32, (bucketShakeTimer - 60) * 1.5);
+				}
+
+				if (bucketShakeTimer > 90) {
+					// Stick fell out!
+					gameState = 'thrown';
+					playSound('drop');
+					spawnSparks(canvas.width * 0.5, canvas.height * 0.72, '#ffaa00');
+					spawnChant("第 " + Math.floor(Math.random() * 100 + 1) + " 籤跌落！", canvas.width * 0.5, canvas.height * 0.48);
+
+					// Reset bucket angle
+					bucketAngle = 0;
+					bucketOffset = {x: 0, y: 0};
+
+					updateUI();
+				}
+			}
+
+			// Handle Kapo blocks bouncing
+			if (kapoThrowTimer > 0) {
+				kapoThrowTimer++;
+
+				// Bouncing trajectory physics
+				const duration = 40;
+				const t = kapoThrowTimer;
+
+				if (t <= duration) {
+					// Sine arc bounces
+					const progress = t / duration;
+					const bounceH = Math.sin(progress * Math.PI) * -80;
+
+					kapoLeft.y = bounceH;
+					kapoLeft.x = -100 * (1 - progress);
+					kapoLeft.rot = progress * 720;
+
+					kapoRight.y = bounceH;
+					kapoRight.x = 100 * (1 - progress);
+					kapoRight.rot = -progress * 720;
+				} else {
+					// Settled down
+					kapoThrowTimer = 0;
+					kapoLeft.y = 0;
+					kapoLeft.x = 0;
+					kapoLeft.rot = -25;
+
+					kapoRight.y = 0;
+					kapoRight.x = 0;
+					kapoRight.rot = 25;
+
+					finalizeKapoResult();
+				}
+			}
+
+			// Render canvas
+			drawBackground(ctx);
+			drawBucket(ctx);
+			drawKapoBlocks(ctx);
+			drawParticles(ctx);
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Toggle Camouflage
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			playSound('camo');
+
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+			updateUI();
+		}
+
+		// Post Score to parent Next.js Leaderboard
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'temple-chim',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		// Listeners
+		canvas.addEventListener('click', function() {
+			startShaking();
+		});
+
+		canvas.addEventListener('touchstart', function(e) {
+			e.preventDefault();
+			startShaking();
+		}, {passive: false});
+
+		shakeBtn.addEventListener('click', function(e) {
+			e.stopPropagation();
+			startShaking();
+		});
+
+		camoBtn.addEventListener('click', function(e) {
+			e.stopPropagation();
+			toggleCamouflage();
+		});
+
+		closeScrollBtn.addEventListener('click', function() {
+			scrollModal.style.opacity = 0;
+			setTimeout(() => {
+				scrollModal.style.display = 'none';
+				gameState = 'ready';
+				updateUI();
+			}, 300);
+		});
+
+		window.addEventListener('keydown', function(e) {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			} else if (e.code === 'KeyU' || e.code === 'Enter') {
+				startShaking();
+			}
+		});
+
+		// Start game
+		gameLoop();
+	</script>
+</body>
+</html>

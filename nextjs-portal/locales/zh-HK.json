@@ -1,0 +1,55 @@
+{
+  "common": {
+    "welcome": "歡迎嚟到傻豬遊戲網！",
+    "login": "登入 / 註冊",
+    "logout": "登出",
+    "profile": "個人帳戶",
+    "coins": "傻豬金幣",
+    "points": "積分",
+    "search": "搜尋遊戲...",
+    "play_now": "即刻玩",
+    "loading": "載入中..."
+  },
+  "categories": {
+    "all": "全部遊戲",
+    "hyper_casual": "扮工摸魚 (Hyper-Casual)",
+    "puzzle": "燒腦智力 (Puzzles)",
+    "arcade": "懷舊街機 (Arcade)",
+    "strategy": "智商對決 (Strategy)",
+    "trending": "老細最怕 (Trending)"
+  },
+  "streaks": {
+    "title": "📆 每日簽到 (Daily Streak)",
+    "day": "第 {{day}} 日",
+    "check_in": "即刻簽到",
+    "checked_in": "今日簽咗到啦！",
+    "streak_count": "你已經連續登入咗 {{count}} 日啦！",
+    "reward_alert": "恭喜你！獲得咗 {{coins}} 傻豬金幣！"
+  },
+  "leaderboards": {
+    "title": "🏆 大灣區摸魚戰力榜 (Leaderboard)",
+    "rank": "名次",
+    "user": "玩家",
+    "game": "遊戲名稱",
+    "score": "最高得分",
+    "date": "創造日期",
+    "global_rank": "全國排名",
+    "local_rank": "澳門/大灣區排名",
+    "loading_text": "正在同步 Firebase 實時數據..."
+  },
+  "auth": {
+    "sign_in_title": "使用 Firebase frictionless 登入",
+    "email": "電郵地址",
+    "password": "密碼",
+    "forgot_pass": "唔記得密碼？",
+    "social_sign_in": "使用 Google 快速登入"
+  },
+  "footer": {
+    "copyright": "© 2026 StupidPig.com 傻豬遊戲網. All rights reserved. 粵ICP備88888888號.",
+    "links": {
+      "privacy": "隱私協議",
+      "terms": "服務條款",
+      "contact": "聯絡我們 (搵食商務)"
+    }
+  }
+}

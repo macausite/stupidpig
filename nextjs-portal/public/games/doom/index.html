@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>辦公室3D突擊 (Office 3D Raycaster)</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0e0d18;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: #ffffff;
+    }
+
+    #game-canvas {
+      background-color: #000000;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      max-width: 100%;
+      max-height: 80vh;
+      cursor: crosshair;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      width: 320px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .game-btn {
+      background: #ff2d55;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .desc {
+      font-size: 11px;
+      color: #8c89ad;
+      text-align: center;
+      margin-top: 8px;
+      max-width: 320px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hud">
+    <div>辦公室3D突擊 (Wolf3D 聯動) 🔫</div>
+    <div>得分: <span id="score">0</span></div>
+  </div>
+
+  <canvas id="game-canvas" width="340" height="340"></canvas>
+
+  <div class="btn-container">
+    <button class="game-btn" onclick="resetGame()">🔄 重新開始</button>
+  </div>
+
+  <div class="desc">
+    使用 **W/S 鍵** 前進/後退，**A/D 鍵** 左右轉向。按 **空白鍵 (Space)** 發射訂書針，消滅浮動的「督工經理」頭像！
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 3D Raycasting Engine Parameters
+    const MAP_WIDTH = 8;
+    const MAP_HEIGHT = 8;
+    const MAP = [
+      [1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,1],
+      [1,0,1,0,0,1,0,1],
+      [1,0,1,0,0,0,0,1],
+      [1,0,0,0,0,1,0,1],
+      [1,0,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1]
+    ];
+
+    let playerX = 2.5;
+    let playerY = 2.5;
+    let playerAngle = 0; // Direction facing (in radians)
+    const FOV = Math.PI / 3; // 60 degrees
+
+    let score = 0;
+    let enemies = []; // list of {x, y, active, type}
+    let isFiring = false;
+    let fireTimer = 0;
+
+    function resetGame() {
+      playerX = 2.5;
+      playerY = 2.5;
+      playerAngle = 0;
+      score = 0;
+      isFiring = false;
+      document.getElementById('score').innerText = score;
+      
+      // Spawn 3 managers
+      enemies = [
+        { x: 5.5, y: 2.5, active: true },
+        { x: 3.5, y: 5.5, active: true },
+        { x: 6.5, y: 6.5, active: true }
+      ];
+    }
+
+    // Keyboard controls
+    const keys = { w: false, s: false, a: false, d: false };
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
+      if (e.key === 's' || e.key === 'ArrowDown') keys.s = true;
+      if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;
+      if (e.key === 'd' || e.key === 'ArrowRight') keys.d = true;
+      if (e.key === ' ' && !isFiring) {
+        isFiring = true;
+        fireTimer = 10;
+        checkShoot();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'w' || e.key === 'ArrowUp') keys.w = false;
+      if (e.key === 's' || e.key === 'ArrowDown') keys.s = false;
+      if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = false;
+      if (e.key === 'd' || e.key === 'ArrowRight') keys.d = false;
+    });
+
+    function checkShoot() {
+      // Check if any enemy is directly in front of us
+      enemies.forEach(enemy => {
+        if (!enemy.active) return;
+        
+        // Vector to enemy
+        const dx = enemy.x - playerX;
+        const dy = enemy.y - playerY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        // Angle to enemy relative to player direction
+        let enemyAngle = Math.atan2(dy, dx) - playerAngle;
+        // Normalize angle
+        while (enemyAngle < -Math.PI) enemyAngle += Math.PI * 2;
+        while (enemyAngle > Math.PI) enemyAngle -= Math.PI * 2;
+        
+        // If within shooting cone and not blocked by wall
+        if (Math.abs(enemyAngle) < 0.15 && dist < 5) {
+          enemy.active = false;
+          score += 100;
+          document.getElementById('score').innerText = score;
+          
+          // Submit score to Next.js portal
+          window.parent.postMessage({
+            type: 'STUPIDPIG_SUBMIT_SCORE',
+            gameId: 'doom',
+            score: score,
+            coinsEarned: Math.floor(score / 5)
+          }, '*');
+
+          // Respawn enemy elsewhere after a delay
+          setTimeout(() => {
+            enemy.x = 1.5 + Math.random() * 5;
+            enemy.y = 1.5 + Math.random() * 5;
+            while(MAP[Math.floor(enemy.y)][Math.floor(enemy.x)] === 1) {
+              enemy.x = 1.5 + Math.random() * 5;
+              enemy.y = 1.5 + Math.random() * 5;
+            }
+            enemy.active = true;
+          }, 3000);
+        }
+      });
+    }
+
+    function update() {
+      const moveSpeed = 0.04;
+      const rotSpeed = 0.03;
+
+      if (keys.a) playerAngle -= rotSpeed;
+      if (keys.d) playerAngle += rotSpeed;
+
+      let dx = 0;
+      let dy = 0;
+      if (keys.w) {
+        dx = moveSpeed * Math.cos(playerAngle);
+        dy = moveSpeed * Math.sin(playerAngle);
+      }
+      if (keys.s) {
+        dx = -moveSpeed * Math.cos(playerAngle);
+        dy = -moveSpeed * Math.sin(playerAngle);
+      }
+
+      // Simple collision checks
+      const nextX = playerX + dx;
+      const nextY = playerY + dy;
+      if (MAP[Math.floor(playerY)][Math.floor(nextX)] === 0) playerX = nextX;
+      if (MAP[Math.floor(nextY)][Math.floor(playerX)] === 0) playerY = nextY;
+
+      if (isFiring) {
+        fireTimer--;
+        if (fireTimer <= 0) isFiring = false;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const halfWidth = canvas.width / 2;
+      const halfHeight = canvas.height / 2;
+
+      // 1. Draw Ceiling & Floor
+      ctx.fillStyle = '#1c1b30'; // Ceiling
+      ctx.fillRect(0, 0, canvas.width, halfHeight);
+      ctx.fillStyle = '#2b2a40'; // Floor
+      ctx.fillRect(0, halfHeight, canvas.width, halfHeight);
+
+      // 2. Raycast Walls
+      const numRays = canvas.width;
+      for (let i = 0; i < numRays; i++) {
+        // Calculate ray angle relative to player angle
+        const rayAngle = (playerAngle - FOV / 2) + (i / numRays) * FOV;
+        
+        let dist = 0;
+        let hitWall = false;
+        const cos = Math.cos(rayAngle);
+        const sin = Math.sin(rayAngle);
+
+        while (!hitWall && dist < 12) {
+          dist += 0.05;
+          const checkX = Math.floor(playerX + dist * cos);
+          const checkY = Math.floor(playerY + dist * sin);
+
+          if (checkX < 0 || checkX >= MAP_WIDTH || checkY < 0 || checkY >= MAP_HEIGHT) {
+            hitWall = true;
+            dist = 12; // Out of bounds
+          } else if (MAP[checkY][checkX] > 0) {
+            hitWall = true;
+          }
+        }
+
+        // Correct fish-eye effect
+        const correctedDist = dist * Math.cos(rayAngle - playerAngle);
+        const wallHeight = Math.min(canvas.height, (canvas.height / correctedDist));
+
+        // Wall Shading based on distance
+        const brightness = Math.max(0, 255 - correctedDist * 20);
+        ctx.fillStyle = `rgb(0, ${Math.floor(brightness * 0.4)}, ${Math.floor(brightness * 0.8)})`;
+        ctx.fillRect(i, halfHeight - wallHeight / 2, 1, wallHeight);
+      }
+
+      // 3. Render 3D Sprite Enemies (Managers peeking)
+      enemies.forEach(enemy => {
+        if (!enemy.active) return;
+
+        const dx = enemy.x - playerX;
+        const dy = enemy.y - playerY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        // Angle relative to player angle
+        let spriteAngle = Math.atan2(dy, dx) - playerAngle;
+        while (spriteAngle < -Math.PI) spriteAngle += Math.PI * 2;
+        while (spriteAngle > Math.PI) spriteAngle -= Math.PI * 2;
+
+        // If inside player's FOV field
+        if (Math.abs(spriteAngle) < FOV / 1.5 && dist > 0.2) {
+          const correctedDist = dist * Math.cos(spriteAngle);
+          const size = Math.min(canvas.height, (canvas.height / correctedDist));
+
+          // Screen X position
+          const xPos = halfWidth + Math.tan(spriteAngle) * halfWidth - size / 4;
+          const yPos = halfHeight - size / 4;
+
+          // Draw floating peeking manager emoji sprite
+          ctx.font = `${size / 2.2}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText("👨‍💼", xPos + size/4, yPos + size/4);
+        }
+      });
+
+      // 4. Draw Player Gun Crosshair
+      ctx.fillStyle = '#ff2d55';
+      ctx.fillRect(halfWidth - 4, halfHeight - 1, 8, 2);
+      ctx.fillRect(halfWidth - 1, halfHeight - 4, 2, 8);
+
+      // Gun muzzle flash animation
+      if (isFiring) {
+        ctx.fillStyle = '#ff9500';
+        ctx.beginPath();
+        ctx.arc(halfWidth, canvas.height - 40, 30, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(halfWidth, canvas.height - 40, 15, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Draw gun handle
+        ctx.fillStyle = '#444';
+        ctx.fillRect(halfWidth - 10, canvas.height - 30, 20, 30);
+        ctx.fillStyle = '#222';
+        ctx.fillRect(halfWidth - 5, canvas.height - 40, 10, 15);
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Handle postMessage reset from Next.js parent portal
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'STUPIDPIG_RESTART_GAME') {
+        resetGame();
+      }
+    });
+
+    resetGame();
+    gameLoop();
+  </script>
+</body>
+</html>

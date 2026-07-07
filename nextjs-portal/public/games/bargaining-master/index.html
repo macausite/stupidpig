@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>街市殺價大師 (Wet Market Bargaining Master)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-pink: #ff2a85;
+			--neon-blue: #00f0ff;
+			--gold: #ffd700;
+			--bg-dark: #09060c;
+			--cstyle-red: #ff3333;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(255, 51, 51, 0.45);
+			border-radius: 12px;
+			box-shadow: 0 0 35px rgba(255, 51, 51, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD stats overlay */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(255, 51, 51, 0.35);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Vendor Dialog box */
+		.vendor-dialog {
+			position: absolute;
+			top: 80px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: rgba(22, 20, 36, 0.92);
+			border: 2px solid var(--cstyle-red);
+			border-radius: 12px;
+			padding: 14px 20px;
+			width: 90%;
+			max-width: 480px;
+			color: #fff;
+			z-index: 15;
+			box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+		}
+
+		.ingredient-name {
+			font-size: 1.2rem;
+			font-weight: bold;
+			color: var(--gold);
+			margin-bottom: 4px;
+		}
+
+		/* Bargaining Slider Meter */
+		.bargain-controls {
+			position: absolute;
+			bottom: 20px;
+			left: 15px;
+			right: 15px;
+			background: rgba(22, 20, 36, 0.85);
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			border-radius: 10px;
+			padding: 16px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 12px;
+			z-index: 20;
+		}
+
+		.meter-track {
+			position: relative;
+			width: 100%;
+			height: 25px;
+			background: linear-gradient(to right, #ff3333 0%, #ff3333 40%, #00ff66 40%, #00ff66 65%, #ffd700 65%, #ffd700 85%, #ff3333 85%, #ff3333 100%);
+			border-radius: 6px;
+			border: 2px solid #000;
+			overflow: hidden;
+		}
+
+		.meter-needle {
+			position: absolute;
+			top: 0;
+			width: 6px;
+			height: 100%;
+			background-color: #ffffff;
+			box-shadow: 0 0 6px #000;
+			left: 50%;
+			transform: translateX(-50%);
+		}
+
+		.game-btn {
+			background: linear-gradient(180deg, #ff3333 0%, #b31212 100%);
+			color: #fff;
+			border: 1px solid rgba(255,255,255,0.15);
+			padding: 12px 36px;
+			border-radius: 8px;
+			font-weight: bold;
+			font-size: 1.05rem;
+			cursor: pointer;
+			box-shadow: 0 4px 12px rgba(255, 51, 51, 0.35);
+			transition: all 0.2s;
+		}
+
+		.game-btn:hover {
+			transform: scale(1.02);
+			box-shadow: 0 4px 16px rgba(255, 51, 51, 0.5);
+		}
+
+		/* Game Over screen */
+		.game-over-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(8, 6, 12, 0.9);
+			display: none;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			color: #fff;
+			z-index: 100;
+			text-align: center;
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD panel -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🥬 街市殺價大師</div>
+				<div style="margin-top: 4px;">銀包剩餘: <span class="score-label" id="wallet-val">$500</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div>已購食材: <span class="score-label" id="purchased-val" style="color: var(--neon-blue);">0 / 4</span></div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Dialog box -->
+		<div class="vendor-dialog">
+			<div class="ingredient-name" id="ing-name">新鮮石斑魚 (🐟)</div>
+			<div style="font-size:0.75rem; color:#ff8080;" id="vendor-heading">🐖 惡相魚檔老細：「靚仔，開價...」</div>
+			<div style="font-size:1.45rem; font-weight:900; color:#ff3333; margin:6px 0;" id="ing-price">$300</div>
+			<div style="font-size:0.85rem; color:#eee; line-height:1.4;" id="vendor-text">「呢條石斑海鮮啱啱運到，保證生猛，少一分錢都唔賣！」</div>
+		</div>
+
+		<!-- Bargaining Slider -->
+		<div class="bargain-controls">
+			<div style="font-size: 0.75rem; color: #aaa; width: 100%; display: flex; justify-content: space-between;">
+				<span>低價 ( lowball)</span>
+				<span>底價 (sweetspot)</span>
+				<span>原價 (original)</span>
+			</div>
+			<div class="meter-track">
+				<div class="meter-needle" id="meter-needle"></div>
+			</div>
+			<button class="game-btn" id="bargain-btn">💰 殺價！ (Bargain)</button>
+		</div>
+
+		<!-- Game Over Screen -->
+		<div class="game-over-overlay" id="end-overlay">
+			<h2 style="font-size: 2.2rem; color: var(--gold); margin-bottom: 12px;" id="end-title">買齊餸收工！ (Victory)</h2>
+			<p style="font-size: 1.1rem; color: #aaa; margin-bottom: 15px; max-width: 450px;" id="end-desc">
+				你省下了 $120 點，成功回家煲湯！
+			</p>
+			<button class="game-btn" id="restart-btn">重入街市 (Try Again)</button>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - Household_Expenses_Audit_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>家庭預算</span>
+				<span>收據稽核</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (食材名稱)</th>
+							<th>B (買入價格)</th>
+							<th>C (預算剩餘)</th>
+							<th>D (殺價次數)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">2026 年大埔街市家常菜買餸帳目</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>全體預算</td>
+							<td></td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">$500</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>新鮮石斑魚</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>本地菜心</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Audio Synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'coin') {
+					// Cash register register ding
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(987.77, now); // B5
+					osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.35);
+				} else if (type === 'anger') {
+					// Butcher plate slap / cleaver strike
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(140, now);
+					osc.frequency.exponentialRampToValueAtTime(30, now + 0.18);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.3, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.18);
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		function speakSentence(text) {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.lang = 'zh-HK';
+				utterance.rate = 1.05;
+				window.speechSynthesis.speak(utterance);
+			}
+		}
+
+		// Ingredients lists
+		const INGREDIENTS = [
+			{
+				name: "新鮮石斑魚 (🐟)",
+				basePrice: 300,
+				vendor: "🐖 惡相魚檔老細：「靚仔，開價...」",
+				desc: "「呢條石斑海鮮啱啱運到，少一分錢都唔賣！」",
+				speechIntro: "靚仔，條石斑三百蚊，買唔買？",
+				insults: [
+					"你想搶劫呀？運桔，行開啦！",
+					"三打七呀？咁平去第二度買啦！"
+				]
+			},
+			{
+				name: "半肥瘦五花肉 (🥩)",
+				basePrice: 180,
+				vendor: "🐖 暴躁豬肉佬：「靚女，幾錢...」",
+				desc: "「頂級本地豬肉，做叉燒一流，買多啲算你平啦！」",
+				speechIntro: "五花肉一百八十蚊，靚肉黎㗎！",
+				insults: [
+					"發夢啦你，咁平蝕底到褲穿窿呀！",
+					"想買平肉？聽日早啲黎啦！"
+				]
+			},
+			{
+				name: "本地菜心 (🥬)",
+				basePrice: 80,
+				vendor: "👵 惡死菜檔阿婆：「阿妹，開價...」",
+				desc: "「本地有機菜心，好甜㗎，今日最後兩扎！」",
+				speechIntro: "本地菜心八十蚊兩扎！",
+				insults: [
+					"你想買平菜去人地度啦，運桔！",
+					"蝕本生意唔做，走啦！"
+				]
+			},
+			{
+				name: "大埔釀豆腐 (🍢)",
+				basePrice: 50,
+				vendor: "👴 豆腐叔叔：「靚仔，收你...」",
+				desc: "「自家磨製釀豆腐，好滑㗎，五蚊舊！」",
+				speechIntro: "滑豆腐五十蚊一盒！",
+				insults: [
+					"豆腐都同我殺價？去買泥沙啦！",
+					"唔好玩啦，小本經營！"
+				]
+			}
+		];
+
+		// Game State
+		let currentIngIndex = 0;
+		let wallet = 500;
+		let isPlaying = true;
+		let isCamouflage = false;
+
+		// Current pricing
+		let currentPrice = 300;
+
+		// Needle oscillation
+		let needlePos = 50; // percentage
+		let needleSpeed = 2.2;
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const walletVal = document.getElementById('wallet-val');
+		const purchasedVal = document.getElementById('purchased-val');
+		const ingName = document.getElementById('ing-name');
+		const vendorHeading = document.getElementById('vendor-heading');
+		const ingPrice = document.getElementById('ing-price');
+		const vendorText = document.getElementById('vendor-text');
+
+		const needle = document.getElementById('meter-needle');
+		const bargainBtn = document.getElementById('bargain-btn');
+
+		const endOverlay = document.getElementById('end-overlay');
+		const endTitle = document.getElementById('end-title');
+		const endDesc = document.getElementById('end-desc');
+		const restartBtn = document.getElementById('restart-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function updateIngredient() {
+			if (currentIngIndex >= INGREDIENTS.length) {
+				isPlaying = false;
+				showEnd(true);
+				return;
+			}
+
+			const ing = INGREDIENTS[currentIngIndex];
+			ingName.textContent = ing.name;
+			vendorHeading.textContent = ing.vendor;
+			currentPrice = ing.basePrice;
+			ingPrice.textContent = `$${currentPrice}`;
+			vendorText.textContent = ing.desc;
+			purchasedVal.textContent = `${currentIngIndex} / 4`;
+
+			speakSentence(ing.speechIntro);
+		}
+
+		function handleBargain() {
+			if (!isPlaying || isCamouflage) return;
+
+			// Stop the needle at needlePos
+			const stoppedAt = needlePos;
+
+			let discount = 0;
+			let isInsult = false;
+			let responseMsg = "";
+
+			if (stoppedAt >= 40 && stoppedAt <= 65) {
+				// Green zone: Sweet spot (35% off)
+				discount = 0.35;
+				responseMsg = "「好啦好啦，今日最後一條算你平啦！(35% Off)」";
+			} else if (stoppedAt > 65 && stoppedAt <= 85) {
+				// Yellow zone: Minor discount (10% off)
+				discount = 0.10;
+				responseMsg = "「平少少比你啦，搭多兩條蔥！(10% Off)」";
+			} else {
+				// Red zone: Lowball insult! Price rises by $20!
+				isInsult = true;
+				const ing = INGREDIENTS[currentIngIndex];
+				responseMsg = ing.insults[Math.floor(Math.random() * ing.insults.length)];
+				currentPrice += 20;
+			}
+
+			if (isInsult) {
+				playSound('anger');
+				ingPrice.textContent = `$${currentPrice}`;
+				vendorText.textContent = responseMsg;
+				speakSentence(responseMsg);
+			} else {
+				// Buy the item!
+				const dealPrice = Math.floor(currentPrice * (1 - discount));
+				wallet -= dealPrice;
+				playSound('coin');
+
+				walletVal.textContent = `$${wallet}`;
+				excelScoreVal.textContent = `$${wallet}`;
+
+				vendorText.textContent = `${responseMsg} 成交價: $${dealPrice}`;
+				speakSentence(`${responseMsg} 收你 ${dealPrice} 蚊。`);
+
+				if (wallet < 0) {
+					isPlaying = false;
+					showEnd(false);
+					return;
+				}
+
+				// Move to next ingredient after delay
+				bargainBtn.disabled = true;
+				setTimeout(() => {
+					bargainBtn.disabled = false;
+					currentIngIndex++;
+					updateIngredient();
+				}, 1800);
+			}
+		}
+
+		function showEnd(success) {
+			endOverlay.style.display = 'flex';
+			if (success) {
+				endTitle.textContent = "🎉 買齊餸收工煲湯！";
+				endTitle.style.color = "var(--gold)";
+				endDesc.innerHTML = `
+					恭喜！你頂住了街市阿婆同魚檔佬嘅怒吼，<strong>成功用餘下 $${wallet} 點預算買齊四樣食材！</strong><br>
+					今晚可以煲靚湯，加鹽加糖，開飯！
+				`;
+				submitScoreToParent(wallet);
+			} else {
+				endTitle.textContent = "❌ 預算超支破產！";
+				endTitle.style.color = "var(--neon-pink)";
+				endDesc.innerHTML = `
+					你喺街市花光了所有錢，<strong>還倒欠老細錢！</strong><br>
+					你兩手空空，被迫挨餓回家。
+				`;
+				submitScoreToParent(0);
+			}
+		}
+
+		// Altar hanging red light canvas drawing (Hong Kong wet market aesthetic)
+		function drawMarket(ctx) {
+			ctx.fillStyle = '#110a12';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw standard red dome market hanging lamps
+			const lampX1 = canvas.width * 0.25;
+			const lampX2 = canvas.width * 0.75;
+			const lampY = 60;
+
+			// Draw red glow from lights
+			ctx.fillStyle = 'rgba(255, 30, 30, 0.12)';
+			ctx.beginPath();
+			ctx.arc(lampX1, lampY + 40, 120, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(lampX2, lampY + 40, 120, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Draw actual red lamps
+			ctx.fillStyle = '#ff2b2b';
+			ctx.strokeStyle = '#330000';
+			ctx.lineWidth = 3;
+
+			// Lamp 1
+			ctx.beginPath();
+			ctx.arc(lampX1, lampY, 35, Math.PI, 0, false);
+			ctx.fill();
+			ctx.stroke();
+
+			// Lamp 2
+			ctx.beginPath();
+			ctx.arc(lampX2, lampY, 35, Math.PI, 0, false);
+			ctx.fill();
+			ctx.stroke();
+
+			// Light bulb inside
+			ctx.fillStyle = '#fff6bd';
+			ctx.beginPath();
+			ctx.arc(lampX1, lampY + 5, 8, 0, Math.PI * 2);
+			ctx.arc(lampX2, lampY + 5, 8, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Stand counters
+			ctx.fillStyle = '#3a2a3e';
+			ctx.fillRect(0, canvas.height * 0.45, canvas.width, canvas.height * 0.15);
+		}
+
+		function gameLoop() {
+			drawMarket(ctx);
+
+			if (isPlaying && !isCamouflage && !bargainBtn.disabled) {
+				// Oscillate needle
+				needlePos += needleSpeed;
+				if (needlePos >= 100 || needlePos <= 0) {
+					needleSpeed *= -1;
+				}
+				needle.style.left = `${needlePos}%`;
+			}
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		bargainBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleBargain();
+		});
+
+		bargainBtn.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			handleBargain();
+		});
+
+		restartBtn.addEventListener('click', () => {
+			location.reload();
+		});
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'bargaining-master',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Start
+		updateIngredient();
+		gameLoop();
+	</script>
+</body>
+</html>

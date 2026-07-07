@@ -1,0 +1,6 @@
+nextjs-portal/node_modules/
+nextjs-portal/.next/
+nextjs-portal/out/
+nextjs-portal/build/
+.DS_Store
+*.log

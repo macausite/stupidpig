@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>亡命紅Van大挑戰 (Death-Defying Red Minibus Challenge)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-red: #ff3333;
+			--neon-green: #33ff33;
+			--neon-yellow: #ffdd00;
+			--neon-blue: #00e5ff;
+			--cstyle-bg: #090810;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--cstyle-bg);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #050308;
+			border: 2px solid rgba(255, 51, 51, 0.4);
+			border-radius: 12px;
+			box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD Overlays */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(9, 8, 16, 0.85);
+			border: 1px solid rgba(255, 51, 51, 0.4);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--neon-yellow);
+			font-weight: bold;
+			font-size: 1.2rem;
+			font-family: monospace;
+		}
+
+		.target-container {
+			position: absolute;
+			top: 85px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: rgba(255, 51, 51, 0.15);
+			border: 2px solid var(--neon-red);
+			border-radius: 10px;
+			padding: 10px 24px;
+			color: #fff;
+			text-align: center;
+			z-index: 10;
+			box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+			pointer-events: none;
+			animation: target-pulse 2s infinite alternate;
+		}
+
+		.target-dest {
+			font-size: 1.7rem;
+			font-weight: 900;
+			color: var(--neon-yellow);
+			text-shadow: 0 0 8px rgba(255, 221, 0, 0.6);
+			margin-top: 4px;
+		}
+
+		/* Slang Buttons Container */
+		.options-grid {
+			position: absolute;
+			bottom: 25px;
+			left: 15px;
+			right: 15px;
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
+			z-index: 20;
+		}
+
+		.slang-btn {
+			background: linear-gradient(180deg, #2b1f3d 0%, #150f22 100%);
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			color: #fff;
+			padding: 14px;
+			border-radius: 8px;
+			font-size: 1rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.15s;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+			text-align: center;
+		}
+
+		.slang-btn:hover {
+			transform: translateY(-2px);
+			border-color: var(--neon-blue);
+			box-shadow: 0 4px 15px rgba(0, 229, 255, 0.25);
+			background: linear-gradient(180deg, #37284e 0%, #1d152f 100%);
+		}
+
+		.slang-btn:active {
+			transform: translateY(1px);
+		}
+
+		.slang-btn.correct-flash {
+			background: linear-gradient(180deg, #1b5e20 0%, #0d3c13 100%) !important;
+			border-color: var(--neon-green) !important;
+			box-shadow: 0 0 15px var(--neon-green) !important;
+		}
+
+		.slang-btn.wrong-flash {
+			background: linear-gradient(180deg, #b71c1c 0%, #7f0000 100%) !important;
+			border-color: var(--neon-red) !important;
+			box-shadow: 0 0 15px var(--neon-red) !important;
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+
+		@keyframes target-pulse {
+			0% { box-shadow: 0 0 10px rgba(255, 51, 51, 0.3); }
+			100% { box-shadow: 0 0 20px rgba(255, 51, 51, 0.7); }
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- Top HUD Panel -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🚐 亡命紅Van大挑戰</div>
+				<div style="margin-top: 4px;">分數: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div id="combo-display" style="font-weight: bold; color: var(--neon-green);">Combo: 0</div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Target Stop Overlay -->
+		<div class="target-container">
+			<div style="font-size: 0.8rem; color: #ccc; letter-spacing: 1px;">下一站落車點 (Next Stop)</div>
+			<div class="target-dest" id="target-dest">旺角 (Mong Kok)</div>
+		</div>
+
+		<!-- Options Grid -->
+		<div class="options-grid" id="options-grid">
+			<!-- Populated via Javascript -->
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - RedMinibus_Logistics_Planning_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>插入</span>
+				<span>公式</span>
+				<span>資料</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (目的地)</th>
+							<th>B (乘客落車暗號)</th>
+							<th>C (時速 km/h)</th>
+							<th>D (累計分數)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">紅Van路線開拓日誌</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>旺角</td>
+							<td>銀行中心有落！</td>
+							<td>140</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>銅鑼灣</td>
+							<td>波斯富街有落！</td>
+							<td>135</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>尖沙咀</td>
+							<td>金馬倫道有落！</td>
+							<td>120</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>香港仔</td>
+							<td>燈筒有落！</td>
+							<td>110</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Setup Audio
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'slap') {
+					// Buzzer / brake beep
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(800, now);
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.15);
+				} else if (type === 'screech') {
+					// Brake screech (synthesized noise)
+					const bufferSize = audioCtx.sampleRate * 0.4;
+					const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+					const data = buffer.getChannelData(0);
+					for (let i = 0; i < bufferSize; i++) {
+						data[i] = Math.random() * 2 - 1;
+					}
+					const noise = audioCtx.createBufferSource();
+					noise.buffer = buffer;
+
+					const filter = audioCtx.createBiquadFilter();
+					filter.type = 'bandpass';
+					filter.frequency.setValueAtTime(3000, now);
+					filter.frequency.exponentialRampToValueAtTime(1000, now + 0.4);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+					noise.connect(filter);
+					filter.connect(gain);
+					gain.connect(audioCtx.destination);
+					noise.start(now);
+				} else if (type === 'honk') {
+					// Double honk
+					for (let i = 0; i < 2; i++) {
+						const honkTime = now + i * 0.18;
+						const osc1 = audioCtx.createOscillator();
+						const osc2 = audioCtx.createOscillator();
+						osc1.type = 'sawtooth';
+						osc2.type = 'sawtooth';
+						osc1.frequency.setValueAtTime(440, honkTime);
+						osc2.frequency.setValueAtTime(445, honkTime);
+
+						const gain = audioCtx.createGain();
+						gain.gain.setValueAtTime(0.15, honkTime);
+						gain.gain.exponentialRampToValueAtTime(0.001, honkTime + 0.12);
+
+						osc1.connect(gain);
+						osc2.connect(gain);
+						gain.connect(audioCtx.destination);
+
+						osc1.start(honkTime);
+						osc2.start(honkTime);
+						osc1.stop(honkTime + 0.13);
+						osc2.stop(honkTime + 0.13);
+					}
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		function speakSentence(text) {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.lang = 'zh-HK'; // Cantonese voice
+				utterance.rate = 1.1;     // Fast-paced shout
+				utterance.pitch = 1.0;
+				window.speechSynthesis.speak(utterance);
+			}
+		}
+
+		// Game database stops
+		const STOPS_DB = [
+			{ dest: "旺角 (Mong Kok)", correct: "銀行中心有落！", wrong: ["百老匯有落！", "太子地鐵站有落！", "信和中心有落！"], shout: "銀行中心有落，唔該！" },
+			{ dest: "銅鑼灣 (Causeway Bay)", correct: "波斯富街有落！", wrong: ["崇光百貨有落！", "時代廣場有落！", "鵝頸橋有落！"], shout: "波斯富街有落，司機！" },
+			{ dest: "尖沙咀 (Tsim Sha Tsui)", correct: "金馬倫道有落！", wrong: ["尖東站有落！", "海港城有落！", "美麗華有落！"], shout: "金馬倫道有落，唔該！" },
+			{ dest: "西環 (Sai Wan)", correct: "水街有落！", wrong: ["港大站有落！", "西邊街有落！", "中環碼頭有落！"], shout: "水街有落，唔該司機！" },
+			{ dest: "觀塘 (Kwun Tong)", correct: "裕民坊有落！", wrong: ["apm有落！", "開源道有落！", "牛頭角有落！"], shout: "裕民坊有落，唔該！" },
+			{ dest: "香港仔 (Aberdeen)", correct: "燈筒有落！", wrong: ["中心商場有落！", "避風塘有落！", "黃竹坑有落！"], shout: "燈筒有落，有落！" }
+		];
+
+		let score = 0;
+		let combo = 0;
+		let currentStop = STOPS_DB[0];
+		let isCamouflage = false;
+
+		// Game physics loop variables
+		let busX = 120;
+		let busY = 320;
+		let speed = 4; // screen pixel speed
+		let isBraking = false;
+		let brakeTimer = 0;
+		let screenShake = 0;
+
+		// Signboard location
+		let signX = 850;
+		let signY = 260;
+		let signLabel = "旺角";
+		let isMissed = false;
+
+		// Smoke particles
+		let particles = [];
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+			busY = canvas.height * 0.58;
+			signY = canvas.height * 0.42;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const scoreVal = document.getElementById('score-val');
+		const comboDisplay = document.getElementById('combo-display');
+		const targetDest = document.getElementById('target-dest');
+		const optionsGrid = document.getElementById('options-grid');
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function generateOptions() {
+			optionsGrid.innerHTML = '';
+			const opts = [currentStop.correct, ...currentStop.wrong];
+			// Shuffle
+			opts.sort(() => Math.random() - 0.5);
+
+			opts.forEach(o => {
+				const btn = document.createElement('button');
+				btn.className = 'slang-btn';
+				btn.textContent = o;
+				btn.addEventListener('click', (e) => handleOptionClick(btn, o));
+				btn.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					handleOptionClick(btn, o);
+				});
+				optionsGrid.appendChild(btn);
+			});
+		}
+
+		function setupNextStop() {
+			currentStop = STOPS_DB[Math.floor(Math.random() * STOPS_DB.length)];
+			targetDest.textContent = currentStop.dest;
+			signLabel = currentStop.dest.split(' ')[0];
+			signX = canvas.width + 100;
+			isMissed = false;
+			isBraking = false;
+			speed = 4 + Math.min(6, combo * 0.4);
+			generateOptions();
+		}
+
+		function handleOptionClick(btn, selected) {
+			if (isCamouflage || isBraking || isMissed) return;
+
+			if (selected === currentStop.correct) {
+				// Success strike!
+				btn.classList.add('correct-flash');
+				isBraking = true;
+				brakeTimer = 0;
+				screenShake = 12;
+				playSound('slap');
+				playSound('screech');
+				speakSentence(currentStop.shout);
+
+				// Score calculation
+				combo++;
+				const points = 100 + combo * 20;
+				score += points;
+
+				scoreVal.textContent = score;
+				comboDisplay.textContent = `Combo: ${combo}`;
+				excelScoreVal.textContent = score;
+
+				submitScoreToParent(score);
+
+				// Spawn lots of exhaust brake smoke
+				for (let i = 0; i < 25; i++) {
+					particles.push({
+						x: busX + 40,
+						y: busY + 35,
+						vx: -Math.random() * 8 - 2,
+						vy: (Math.random() - 0.5) * 5 - 2,
+						radius: Math.random() * 8 + 4,
+						alpha: 0.9,
+						decay: 0.02
+					});
+				}
+			} else {
+				// Wrong choice trigger penalty!
+				btn.classList.add('wrong-flash');
+				combo = 0;
+				comboDisplay.textContent = `Combo: 0`;
+				playSound('honk');
+				speed += 2; // driver speeds up in anger!
+			}
+		}
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'red-minibus',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		// Animation Drawings
+		function drawScrollingBackground(ctx) {
+			// Scrolling neon city background
+			const speedFactor = isBraking ? 0 : speed;
+
+			// Nathan road ground
+			ctx.fillStyle = '#110d21';
+			ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
+
+			// Road dividers
+			ctx.strokeStyle = '#322552';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(0, canvas.height * 0.72);
+			ctx.lineTo(canvas.width, canvas.height * 0.72);
+			ctx.stroke();
+
+			// Neon neon storefront shapes
+			ctx.fillStyle = '#06030c';
+			ctx.fillRect(50, canvas.height * 0.15, 120, canvas.height * 0.4);
+			ctx.fillRect(250, canvas.height * 0.1, 160, canvas.height * 0.45);
+			ctx.fillRect(500, canvas.height * 0.2, 140, canvas.height * 0.35);
+
+			// Draw neon signboards with glow
+			ctx.save();
+			ctx.shadowBlur = 10;
+
+			// Slogan 1: 金記珠寶
+			ctx.shadowColor = '#00ffff';
+			ctx.fillStyle = '#00ffff';
+			ctx.fillRect(80, canvas.height * 0.2, 18, 90);
+			ctx.fillStyle = '#050308';
+			ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
+			ctx.fillText("金", 83, canvas.height * 0.22);
+			ctx.fillText("記", 83, canvas.height * 0.25);
+			ctx.fillText("珠", 83, canvas.height * 0.28);
+			ctx.fillText("寶", 83, canvas.height * 0.31);
+
+			// Slogan 2: 順德生滾粥
+			ctx.shadowColor = '#ff00ff';
+			ctx.fillStyle = '#ff00ff';
+			ctx.fillRect(300, canvas.height * 0.15, 80, 26);
+			ctx.fillStyle = '#050308';
+			ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
+			ctx.fillText("生滾粥", 312, canvas.height * 0.18);
+
+			// Slogan 3: 網吧摸魚
+			ctx.shadowColor = '#00ff66';
+			ctx.fillStyle = '#00ff66';
+			ctx.fillRect(540, canvas.height * 0.22, 22, 70);
+			ctx.fillStyle = '#050308';
+			ctx.fillText("網", 545, canvas.height * 0.24);
+			ctx.fillText("吧", 545, canvas.height * 0.27);
+			ctx.fillText("魚", 545, canvas.height * 0.3);
+
+			ctx.restore();
+		}
+
+		function drawMinibus(ctx) {
+			const x = busX;
+			const y = busY;
+
+			// Wheel bounce animation
+			const bounce = isBraking ? 0 : Math.sin(Date.now() * 0.02) * 1.5;
+
+			// Shadow
+			ctx.fillStyle = 'rgba(0,0,0,0.45)';
+			ctx.beginPath();
+			ctx.ellipse(x + 40, y + 45, 75, 12, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Minibus Body Outline (Red Minibus: white body with red roof)
+			ctx.fillStyle = '#f8f9fa'; // White body
+			ctx.beginPath();
+			ctx.roundRect(x - 35, y - 35 + bounce, 150, 70, [18, 25, 8, 8]);
+			ctx.fill();
+
+			// Red Roof Cover
+			ctx.fillStyle = '#d90429'; // Red roof
+			ctx.beginPath();
+			ctx.moveTo(x - 22, y - 35 + bounce);
+			ctx.lineTo(x + 110, y - 35 + bounce);
+			ctx.lineTo(x + 105, y - 20 + bounce);
+			ctx.lineTo(x - 25, y - 20 + bounce);
+			ctx.closePath();
+			ctx.fill();
+
+			// Windows
+			ctx.fillStyle = '#161a1d';
+			ctx.fillRect(x - 18, y - 16 + bounce, 24, 20); // Front window
+			ctx.fillRect(x + 14, y - 16 + bounce, 30, 20); // Middle window
+			ctx.fillRect(x + 52, y - 16 + bounce, 30, 20); // Back window
+
+			// Red stripe down side
+			ctx.fillStyle = '#d90429';
+			ctx.fillRect(x - 30, y + 10 + bounce, 142, 8);
+
+			// Wheels
+			ctx.fillStyle = '#1b1b1b';
+			ctx.strokeStyle = '#555';
+			ctx.lineWidth = 2;
+
+			ctx.beginPath();
+			ctx.arc(x + 5, y + 36 + bounce, 16, 0, Math.PI * 2);
+			ctx.arc(x + 85, y + 36 + bounce, 16, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+
+			// Wheel cap
+			ctx.fillStyle = '#d3d3d3';
+			ctx.beginPath();
+			ctx.arc(x + 5, y + 36 + bounce, 6, 0, Math.PI * 2);
+			ctx.arc(x + 85, y + 36 + bounce, 6, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		function drawSignboard(ctx) {
+			const x = signX;
+			const y = signY;
+
+			// Post
+			ctx.strokeStyle = '#555';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x, y + 120);
+			ctx.stroke();
+
+			// Red & White Target round sign
+			ctx.fillStyle = '#f8f9fa';
+			ctx.strokeStyle = '#d90429';
+			ctx.lineWidth = 5;
+			ctx.beginPath();
+			ctx.arc(x, y, 32, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+
+			// Destination name text
+			ctx.fillStyle = '#1a1a1a';
+			ctx.font = 'bold 15px "Microsoft YaHei", sans-serif';
+			ctx.textAlign = 'center';
+			ctx.fillText(signLabel, x, y + 5);
+
+			// Dashed Line Checkpoint
+			ctx.strokeStyle = 'rgba(255, 51, 51, 0.35)';
+			ctx.lineWidth = 2;
+			ctx.setLineDash([8, 6]);
+			ctx.beginPath();
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, canvas.height);
+			ctx.stroke();
+			ctx.setLineDash([]);
+		}
+
+		function updateParticles() {
+			for (let i = particles.length - 1; i >= 0; i--) {
+				const p = particles[i];
+				p.x += p.vx;
+				p.y += p.vy;
+				p.alpha -= p.decay;
+				if (p.alpha <= 0) {
+					particles.splice(i, 1);
+				}
+			}
+		}
+
+		// Draw smoke particles
+		function drawParticles(ctx) {
+			particles.forEach(p => {
+				ctx.save();
+				ctx.globalAlpha = p.alpha;
+				ctx.fillStyle = '#e5e5e5';
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.restore();
+			});
+		}
+
+		function gameLoop() {
+			updateParticles();
+
+			// Apply screen shake
+			ctx.save();
+			if (screenShake > 0) {
+				const dx = (Math.random() - 0.5) * screenShake;
+				const dy = (Math.random() - 0.5) * screenShake;
+				ctx.translate(dx, dy);
+				screenShake *= 0.9;
+				if (screenShake < 0.5) screenShake = 0;
+			}
+
+			// Draw assets
+			drawScrollingBackground(ctx);
+			drawSignboard(ctx);
+			drawMinibus(ctx);
+			drawParticles(ctx);
+			ctx.restore();
+
+			// Game flow state logic
+			if (!isCamouflage) {
+				if (isBraking) {
+					// Bus is slowing down
+					speed = Math.max(0, speed - 0.25);
+					brakeTimer++;
+
+					if (speed === 0 && brakeTimer > 60) {
+						// Wait for passenger release, go next stop
+						setupNextStop();
+					}
+				} else {
+					// Sign moves left
+					signX -= speed;
+
+					// Check if missed stop
+					if (signX < busX - 50 && !isMissed) {
+						isMissed = true;
+						combo = 0;
+						comboDisplay.textContent = `Combo: 0`;
+						playSound('honk');
+						speakSentence("司機，過咗站啊！");
+					}
+
+					// Cycle back if missed sign goes completely off-screen
+					if (signX < -100) {
+						setupNextStop();
+					}
+				}
+			}
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Space listener for camouflage
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Initialize
+		setupNextStop();
+		gameLoop();
+	</script>
+</body>
+</html>

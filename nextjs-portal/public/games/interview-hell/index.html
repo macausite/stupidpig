@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>職場地獄見工記 (Interview Hell: Survival of the Fittest)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-pink: #ff2a85;
+			--neon-blue: #00f0ff;
+			--gold: #ffd700;
+			--bg-dark: #0a0b12;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(0, 240, 255, 0.4);
+			border-radius: 12px;
+			box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD stats overlay */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(0, 240, 255, 0.35);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Question & Dialog Bubble */
+		.dialog-box {
+			position: absolute;
+			top: 75px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: rgba(22, 20, 36, 0.92);
+			border: 2px solid var(--neon-blue);
+			border-radius: 12px;
+			padding: 16px;
+			width: 90%;
+			max-width: 520px;
+			color: #fff;
+			z-index: 10;
+			box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+		}
+
+		.patience-bar-container {
+			width: 100%;
+			height: 6px;
+			background: #232038;
+			border-radius: 3px;
+			overflow: hidden;
+			margin-top: 8px;
+		}
+
+		.patience-bar {
+			width: 100%;
+			height: 100%;
+			background-color: var(--neon-blue);
+			transition: width 0.3s ease;
+		}
+
+		/* Multiple choices block */
+		.choices-panel {
+			position: absolute;
+			bottom: 20px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			z-index: 20;
+		}
+
+		.choice-btn {
+			background: linear-gradient(180deg, #1d1b2e 0%, #11101c 100%);
+			border: 1px solid rgba(0, 240, 255, 0.25);
+			color: #fff;
+			padding: 12px 18px;
+			border-radius: 8px;
+			font-size: 0.92rem;
+			font-weight: bold;
+			text-align: left;
+			cursor: pointer;
+			transition: all 0.15s;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+		}
+
+		.choice-btn:hover {
+			border-color: var(--neon-blue);
+			box-shadow: 0 4px 15px rgba(0, 240, 255, 0.25);
+			background: linear-gradient(180deg, #27243e 0%, #171526 100%);
+		}
+
+		.choice-btn:active {
+			transform: scale(0.98);
+		}
+
+		/* Restart/Overlays */
+		.game-over-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(8, 6, 12, 0.9);
+			display: none;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			color: #fff;
+			z-index: 100;
+			text-align: center;
+			padding: 20px;
+		}
+
+		.game-btn {
+			background: linear-gradient(180deg, #00f0ff 0%, #00a4b3 100%);
+			color: #000;
+			border: none;
+			padding: 12px 28px;
+			border-radius: 8px;
+			font-weight: bold;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
+			margin-top: 15px;
+		}
+
+		.game-btn:hover {
+			transform: scale(1.03);
+			box-shadow: 0 4px 20px rgba(0, 240, 255, 0.6);
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD panel -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>💼 職場地獄見工記</div>
+				<div style="margin-top: 4px;">期望起薪: <span class="score-label" id="salary-val">$32,000</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div>關卡: <span class="score-label" id="stage-val" style="color: var(--neon-pink);">1 / 5</span></div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Dialog box showing question and patience bar -->
+		<div class="dialog-box" id="dialog-box">
+			<div style="font-size:0.75rem; color:var(--neon-blue); font-weight:bold; letter-spacing:1px;" id="boss-title">👿 面試官 (Angry HR Manager)：「...」</div>
+			<div style="font-size:1.05rem; font-weight:bold; color:#fff; margin:8px 0; line-height:1.4;" id="boss-question">老細半夜三點叫你做嘢，你點回應？</div>
+			<div style="font-size:0.75rem; color:#aaa;">面試官耐性 (Patience)</div>
+			<div class="patience-bar-container">
+				<div class="patience-bar" id="patience-bar"></div>
+			</div>
+		</div>
+
+		<!-- Choices Grid -->
+		<div class="choices-panel" id="choices-grid">
+			<!-- JavaScript populated -->
+		</div>
+
+		<!-- Game Over Overlay -->
+		<div class="game-over-overlay" id="end-overlay">
+			<h2 style="font-size: 2.2rem; color: var(--neon-pink); margin-bottom: 15px;" id="end-title">面試失敗 (Game Over)</h2>
+			<p style="font-size: 1.05rem; color: #aaa; max-width: 450px; margin-bottom: 20px; line-height: 1.5;" id="end-desc">
+				面試官怒吼：「返去等消息啦！」你已被趕出面試室。
+			</p>
+			<button class="game-btn" id="restart-btn">重新見工 (Try Again)</button>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - Candidate_Interview_Score_Matrix_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>求職評分</span>
+				<span>薪資級距</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (求職者名稱)</th>
+							<th>B (面試得分)</th>
+							<th>C (核定月薪)</th>
+							<th>D (評語)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">2026 屆大灣區見工考核矩陣</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>傻豬 (Stupid Pig)</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">100</td>
+							<td id="excel-salary-val">$32,000</td>
+							<td>奴性極佳，符合公司文化</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>小明</td>
+							<td>45</td>
+							<td>$12,000</td>
+							<td>準時收工，缺乏熱情</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>阿華</td>
+							<td>15</td>
+							<td>$0</td>
+							<td>詢問加班費，即時淘汰</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Audio Synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'happy') {
+					// Good chime
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(523.25, now);
+					osc.frequency.setValueAtTime(659.25, now + 0.1);
+					osc.frequency.setValueAtTime(783.99, now + 0.2);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.4);
+				} else if (type === 'angry') {
+					// Buzz
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(130, now);
+					osc.frequency.setValueAtTime(100, now + 0.15);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.3);
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		function speakSentence(text) {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.lang = 'zh-HK';
+				utterance.rate = 1.05;
+				window.speechSynthesis.speak(utterance);
+			}
+		}
+
+		// Satirical Questions list
+		const QUESTIONS = [
+			{
+				q: "老細半夜三點叫你做嘢，你點回應？",
+				bossState: 'normal',
+				choices: [
+					{ text: "「即刻起身做！老細半夜搵我，一定係賞識我先俾機會我！」", patience: 25, salary: -3000, state: 'happy', speech: "即刻起身做！" },
+					{ text: "「扮唔知，第二朝返工先處理。」", patience: -20, salary: 0, state: 'angry', speech: "扮唔知，第二朝先處理。" },
+					{ text: "「問老細有無加班費 (OT Pay) 先做。」", patience: -55, salary: 1000, state: 'angry', speech: "問下有無加班費先做。" }
+				]
+			},
+			{
+				q: "你對我哋公司嘅加班文化有咩睇法？",
+				bossState: 'normal',
+				choices: [
+					{ text: "「公司係我第一個家，加到聽朝都無怨無悔！」", patience: 30, salary: -4000, state: 'happy', speech: "公司係我第一個家！" },
+					{ text: "「只要公司包免費晚餐，我樂意支持。」", patience: 10, salary: -1000, state: 'normal', speech: "有外賣食就可以加。" },
+					{ text: "「準時收工係人權，我希望生活與工作平衡。」", patience: -50, salary: 1500, state: 'angry', speech: "我想準時收工。" }
+				]
+			},
+			{
+				q: "如果我只可以俾你最低工資，你點解仲要黎？",
+				bossState: 'normal',
+				choices: [
+					{ text: "「因為我唔係為錢，我係為咗黎學習同奉獻自己！」", patience: 35, salary: -5000, state: 'happy', speech: "我係黎學習同奉獻自己！" },
+					{ text: "「因為我熱愛呢個行業，錢對我黎講只係數字。」", patience: 15, salary: -2000, state: 'normal', speech: "錢對我黎講只係數字。" },
+					{ text: "「因為我要食飯交租，最低工資真係食得屎啦。」", patience: -60, salary: 2000, state: 'angry', speech: "最低工資真係食得屎啦。" }
+				]
+			},
+			{
+				q: "你點睇同輩之間嘅內卷 (Competition) 競爭？",
+				bossState: 'normal',
+				choices: [
+					{ text: "「我會率先自願降薪，並每晚加班到 11 點以表誠意！」", patience: 40, salary: -6000, state: 'happy', speech: "我會率先自願降薪！" },
+					{ text: "「我會做好自己嘅本分，同大家和諧共處。」", patience: -15, salary: 0, state: 'angry', speech: "我做好本分就可以。" },
+					{ text: "「拒絕內卷，大家一齊躺平最舒服。」", patience: -65, salary: 2000, state: 'angry', speech: "大家一齊躺平最舒服。" }
+				]
+			},
+			{
+				q: "如果客戶要求一個完全不合理嘅修改，你會點做？",
+				bossState: 'normal',
+				choices: [
+					{ text: "「客戶永遠是對的！我會通宵改到佢滿意為止！」", patience: 30, salary: -3000, state: 'happy', speech: "客戶永遠是對的！" },
+					{ text: "「同客戶解釋合理性，拒絕無理要求。」", patience: -40, salary: 1000, state: 'angry', speech: "拒絕無理要求。" },
+					{ text: "「叫老細出面同客戶溝通。」", patience: -30, salary: 0, state: 'normal', speech: "叫老細出面搞。" }
+				]
+			}
+		];
+
+		// Game states
+		let currentStage = 0;
+		let patience = 100;
+		let salary = 32000;
+		let isCamouflage = false;
+		let bossVisualState = 'normal'; // normal, angry, happy
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const salaryVal = document.getElementById('salary-val');
+		const stageVal = document.getElementById('stage-val');
+		const patienceBar = document.getElementById('patience-bar');
+		const choicesGrid = document.getElementById('choices-grid');
+		const dialogBox = document.getElementById('dialog-box');
+		const bossTitle = document.getElementById('boss-title');
+		const bossQuestion = document.getElementById('boss-question');
+
+		const endOverlay = document.getElementById('end-overlay');
+		const endTitle = document.getElementById('end-title');
+		const endDesc = document.getElementById('end-desc');
+		const restartBtn = document.getElementById('restart-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+		const excelSalaryVal = document.getElementById('excel-salary-val');
+
+		function updateStage() {
+			if (currentStage >= QUESTIONS.length) {
+				// Hired successfully!
+				showEndScreen(true);
+				return;
+			}
+
+			stageVal.textContent = `${currentStage + 1} / ${QUESTIONS.length}`;
+			salaryVal.textContent = `$${salary.toLocaleString()}`;
+			excelSalaryVal.textContent = `$${salary.toLocaleString()}`;
+			patienceBar.style.width = `${patience}%`;
+
+			const current = QUESTIONS[currentStage];
+			bossQuestion.textContent = current.q;
+			bossTitle.textContent = `👿 面試官 (HR Manager)：「...」`;
+			bossVisualState = current.bossState;
+
+			speakSentence(current.q);
+
+			// Render choices
+			choicesGrid.innerHTML = '';
+			current.choices.forEach(c => {
+				const btn = document.createElement('button');
+				btn.className = 'choice-btn';
+				btn.textContent = c.text;
+				btn.addEventListener('click', () => handleChoice(c));
+				choicesGrid.appendChild(btn);
+			});
+		}
+
+		function handleChoice(choice) {
+			if (isCamouflage) return;
+
+			// Apply effects
+			patience = Math.min(100, Math.max(0, patience + choice.patience));
+			salary += choice.salary;
+
+			// Visual change on HR manager
+			bossVisualState = choice.state;
+			if (choice.patience < 0) {
+				playSound('angry');
+				bossTitle.textContent = `👿 面試官 (極度憤怒)：「簡直無奉獻精神！」`;
+			} else {
+				playSound('happy');
+				bossTitle.textContent = `😇 面試官 (非常滿意)：「呢個答覆夠積極！」`;
+			}
+
+			patienceBar.style.width = `${patience}%`;
+			salaryVal.textContent = `$${salary.toLocaleString()}`;
+			excelSalaryVal.textContent = `$${salary.toLocaleString()}`;
+
+			// Delay before next stage
+			choicesGrid.innerHTML = ''; // lock choices
+			speakSentence(choice.speech);
+
+			setTimeout(() => {
+				if (patience <= 0) {
+					showEndScreen(false);
+				} else {
+					currentStage++;
+					updateStage();
+				}
+			}, 1500);
+		}
+
+		function showEndScreen(success) {
+			endOverlay.style.display = 'flex';
+			if (success) {
+				endTitle.textContent = "🎉 面試成功！ (Hired!)";
+				endTitle.style.color = "var(--neon-blue)";
+				endDesc.innerHTML = `
+					恭喜！你被錄取為<strong>「首席摸魚實習生」</strong>！<br>
+					核定月薪為: <span style="color:var(--gold); font-weight:bold;">$${salary.toLocaleString()}</span><br>
+					你具備極高奴性與完美職場話術，歡迎加入加班地獄！
+				`;
+				submitScoreToParent(salary);
+			} else {
+				endTitle.textContent = "❌ 面試淘汰！ (Rejected)";
+				endTitle.style.color = "var(--neon-pink)";
+				endDesc.innerHTML = `
+					面試官怒吼：「返去等消息啦！」<br>
+					你因為詢問加班費或提及人權，已被列入行業黑名單！
+				`;
+				submitScoreToParent(0);
+			}
+		}
+
+		function restartGame() {
+			currentStage = 0;
+			patience = 100;
+			salary = 32000;
+			endOverlay.style.display = 'none';
+			updateStage();
+		}
+
+		restartBtn.addEventListener('click', restartGame);
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'interview-hell',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Canvas drawing office background & HR manager
+		function drawOffice(ctx) {
+			ctx.fillStyle = '#0f0a17';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Grid floor
+			ctx.strokeStyle = '#1e162f';
+			ctx.lineWidth = 1;
+			for (let i = 0; i < canvas.width; i += 40) {
+				ctx.beginPath();
+				ctx.moveTo(i, 0);
+				ctx.lineTo(i, canvas.height);
+				ctx.stroke();
+			}
+
+			// Draw office partition/desk
+			ctx.fillStyle = '#221933';
+			ctx.fillRect(canvas.width * 0.15, canvas.height * 0.45, canvas.width * 0.7, canvas.height * 0.2);
+			ctx.strokeStyle = '#433460';
+			ctx.lineWidth = 3;
+			ctx.strokeRect(canvas.width * 0.15, canvas.height * 0.45, canvas.width * 0.7, canvas.height * 0.2);
+
+			// Draw HR manager face/shape based on status
+			const bossX = canvas.width * 0.5;
+			const bossY = canvas.height * 0.35;
+
+			// Shoulders
+			ctx.fillStyle = '#1c1b2c';
+			ctx.beginPath();
+			ctx.ellipse(bossX, bossY + 45, 45, 20, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Neck
+			ctx.fillStyle = '#e8cbb5';
+			ctx.fillRect(bossX - 8, bossY + 15, 16, 20);
+
+			// Head
+			ctx.fillStyle = '#ffdfc4';
+			ctx.beginPath();
+			ctx.arc(bossX, bossY, 32, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Face status
+			if (bossVisualState === 'happy') {
+				// Smiley eyes
+				ctx.strokeStyle = '#2e7d32';
+				ctx.lineWidth = 3;
+				ctx.beginPath();
+				ctx.arc(bossX - 12, bossY - 4, 6, Math.PI, 0, false);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(bossX + 12, bossY - 4, 6, Math.PI, 0, false);
+				ctx.stroke();
+				// Smile mouth
+				ctx.beginPath();
+				ctx.arc(bossX, bossY + 8, 8, 0, Math.PI, false);
+				ctx.stroke();
+			} else if (bossVisualState === 'angry') {
+				// Angry red overlay face
+				ctx.fillStyle = '#ffcdd2';
+				ctx.beginPath();
+				ctx.arc(bossX, bossY, 32, 0, Math.PI * 2);
+				ctx.fill();
+				// Slanted eyes
+				ctx.strokeStyle = '#c62828';
+				ctx.lineWidth = 3.5;
+				ctx.beginPath();
+				ctx.moveTo(bossX - 18, bossY - 10);
+				ctx.lineTo(bossX - 6, bossY - 3);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(bossX + 18, bossY - 10);
+				ctx.lineTo(bossX + 6, bossY - 3);
+				ctx.stroke();
+				// Frown mouth
+				ctx.beginPath();
+				ctx.arc(bossX, bossY + 14, 8, Math.PI, 0, false);
+				ctx.stroke();
+			} else {
+				// Normal expression
+				ctx.fillStyle = '#222';
+				ctx.beginPath();
+				ctx.arc(bossX - 10, bossY - 4, 3, 0, Math.PI*2);
+				ctx.arc(bossX + 10, bossY - 4, 3, 0, Math.PI*2);
+				ctx.fill();
+				// Straight mouth line
+				ctx.strokeStyle = '#333';
+				ctx.lineWidth = 2.5;
+				ctx.beginPath();
+				ctx.moveTo(bossX - 8, bossY + 8);
+				ctx.lineTo(bossX + 8, bossY + 8);
+				ctx.stroke();
+			}
+
+			// Black corporate tie/suit detail
+			ctx.fillStyle = '#000';
+			ctx.beginPath();
+			ctx.moveTo(bossX - 6, bossY + 35);
+			ctx.lineTo(bossX + 6, bossY + 35);
+			ctx.lineTo(0 + bossX, bossY + 55);
+			ctx.closePath();
+			ctx.fill();
+		}
+
+		function gameLoop() {
+			drawOffice(ctx);
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Initialize
+		updateStage();
+		gameLoop();
+	</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>小黑屋 (A Dark Room Clone)</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0b0a0f;
+      font-family: "Courier New", Courier, monospace;
+      color: #e0dbe3;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+      gap: 16px;
+    }
+
+    .header {
+      border-bottom: 1px dashed #44415a;
+      padding-bottom: 8px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffb300;
+    }
+
+    .game-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid #8c89ad;
+      color: #e0dbe3;
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #2b294a;
+      border-color: #ffb300;
+      color: #ffffff;
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: #44415a;
+    }
+
+    .stats {
+      border: 1px solid #44415a;
+      padding: 12px;
+      background: #141324;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-box {
+      border: 1px solid #44415a;
+      background: #08070d;
+      padding: 10px;
+      height: 120px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #8c89ad;
+    }
+
+    .log-entry {
+      margin-bottom: 6px;
+      border-left: 2px solid #44415a;
+      padding-left: 6px;
+    }
+
+    .log-entry.highlight {
+      color: #ffb300;
+      border-left-color: #ffb300;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="title">小黑屋 (A Dark Room) 🔥</div>
+      <div style="font-size: 11px; margin-top: 4px; color: #8c89ad;">房裡一片漆黑。營火已經熄滅。</div>
+    </div>
+
+    <div class="game-area">
+      <!-- ACTIONS PANEL -->
+      <div class="panel">
+        <button id="btn-stoke" class="btn" onclick="stokeFire()">點燃營火 (Stoke Fire)</button>
+        <button id="btn-gather" class="btn" onclick="gatherWood()" disabled>收集木材 (Gather Wood)</button>
+        <button id="btn-hut" class="btn" onclick="buildHut()" disabled>建造木屋 (Build Hut) [100木材]</button>
+        <button id="btn-explore" class="btn" onclick="exploreWilderness()" disabled>探索荒野 (Explore)</button>
+      </div>
+
+      <!-- INVENTORY/STATS PANEL -->
+      <div class="panel">
+        <div class="stats">
+          <div style="font-weight: bold; border-bottom: 1px solid #44415a; padding-bottom: 4px; color: #ffb300;">物資清單</div>
+          <div>房間溫度: <span id="stat-temp">冰冷</span></div>
+          <div>木材儲量: <span id="stat-wood">0</span></div>
+          <div>小木屋數: <span id="stat-huts">0</span></div>
+          <div>外來流浪者: <span id="stat-strangers">0</span></div>
+          <div style="margin-top: 6px; border-top: 1px solid #44415a; padding-top: 6px; font-weight: bold;">
+            累計積分: <span id="stat-score">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG FEED BOX -->
+    <div>
+      <div class="log-box" id="log-box">
+        <div class="log-entry">房間很冷。營火已經熄滅。</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let fireLevel = 0; // 0 = out, 1 = flickering, 2 = warm, 3 = roaring
+    let wood = 0;
+    let huts = 0;
+    let strangers = 0;
+    let score = 0;
+
+    function addLog(text, highlight = false) {
+      const box = document.getElementById('log-box');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${highlight ? 'highlight' : ''}`;
+      entry.innerText = text;
+      box.appendChild(entry);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function stokeFire() {
+      if (fireLevel === 0) {
+        fireLevel = 1;
+        document.getElementById('stat-temp').innerText = '微溫';
+        addLog('營火開始閃爍微弱的光芒。', true);
+        document.getElementById('btn-gather').disabled = false;
+      } else if (fireLevel === 1) {
+        fireLevel = 2;
+        document.getElementById('stat-temp').innerText = '溫暖';
+        addLog('火焰燃燒起來了，屋裡暖和了一些。');
+      } else if (fireLevel === 2) {
+        fireLevel = 3;
+        document.getElementById('stat-temp').innerText = '熾熱';
+        addLog('營火熊熊燃燒，照亮了整個小黑屋！');
+      }
+      score += 10;
+      updateUI();
+    }
+
+    function gatherWood() {
+      wood += 5 + strangers * 2;
+      addLog(`你在附近的森林裡收集了一些乾枯的木頭。 (+5 木材)`);
+      score += 15;
+      updateUI();
+    }
+
+    function buildHut() {
+      if (wood >= 100) {
+        wood -= 100;
+        huts++;
+        addLog('你在屋外用木材搭建了一間簡易的小木屋。', true);
+        
+        // Strangers arrive
+        setTimeout(() => {
+          strangers += 2;
+          addLog('看見裊裊升起的煙霧，兩名無家可歸者來到了小黑屋尋求庇護。', true);
+          score += 100;
+          updateUI();
+        }, 3000);
+
+        score += 50;
+        updateUI();
+      }
+    }
+
+    function exploreWilderness() {
+      addLog('你帶上微弱的火把探索附近的荒野，發現了一處廢棄的前哨站！ (+200 積分)', true);
+      score += 200;
+      updateUI();
+      
+      // Submit score to portal
+      window.parent.postMessage({
+        type: 'STUPIDPIG_SUBMIT_SCORE',
+        gameId: 'adarkroom',
+        score: score,
+        coinsEarned: Math.floor(score / 5)
+      }, '*');
+    }
+
+    function updateUI() {
+      document.getElementById('stat-wood').innerText = wood;
+      document.getElementById('stat-huts').innerText = huts;
+      document.getElementById('stat-strangers').innerText = strangers;
+      document.getElementById('stat-score').innerText = score;
+
+      // Enable actions based on resources
+      document.getElementById('btn-hut').disabled = wood < 100;
+      document.getElementById('btn-explore').disabled = score < 300;
+
+      if (wood >= 100) {
+        document.getElementById('btn-hut').innerText = '建造木屋 (Build Hut) [100木材]';
+      }
+    }
+
+    function resetGame() {
+      fireLevel = 0;
+      wood = 0;
+      huts = 0;
+      strangers = 0;
+      score = 0;
+      
+      document.getElementById('stat-temp').innerText = '冰冷';
+      document.getElementById('btn-gather').disabled = true;
+      document.getElementById('btn-hut').disabled = true;
+      document.getElementById('btn-explore').disabled = true;
+      
+      const box = document.getElementById('log-box');
+      box.innerHTML = '<div class="log-entry">房間很冷。營火已經熄滅。</div>';
+      updateUI();
+    }
+
+    // Auto-fire maintenance by strangers
+    setInterval(() => {
+      if (strangers > 0) {
+        wood += strangers * 1;
+        score += strangers * 2;
+        updateUI();
+      }
+    }, 2000);
+
+    // Intercept messages
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'STUPIDPIG_RESTART_GAME') {
+        resetGame();
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>鵝頸橋打小人 (Ngo Keng Kiu Villain Hitting)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-red: #ff3366;
+			--neon-purple: #9d4edd;
+			--neon-blue: #00f0ff;
+			--neon-yellow: #ffb703;
+			--gold: #d4af37;
+			--wood: #8b5a2b;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: #0b0914;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #06050b;
+			border: 2px solid rgba(157, 78, 221, 0.3);
+			border-radius: 12px;
+			box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(157, 78, 221, 0.2);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* UI Overlay and Menus */
+		.ui-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.stats-card {
+			background: rgba(10, 9, 20, 0.85);
+			border: 1px solid rgba(157, 78, 221, 0.4);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+			backdrop-filter: blur(5px);
+		}
+
+		.score-label {
+			color: var(--neon-yellow);
+			font-weight: 800;
+			font-size: 1.2rem;
+			font-family: monospace;
+			text-shadow: 0 0 5px rgba(255, 183, 3, 0.5);
+		}
+
+		.combo-label {
+			color: var(--neon-red);
+			font-weight: 800;
+			font-size: 1rem;
+		}
+
+		.btn-group {
+			position: absolute;
+			bottom: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			gap: 15px;
+			z-index: 10;
+		}
+
+		.game-btn {
+			background: linear-gradient(135deg, #7b2cbf 0%, #5a189a 100%);
+			color: #fff;
+			border: 1px solid rgba(255,255,255,0.2);
+			padding: 10px 20px;
+			border-radius: 8px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 15px rgba(123, 44, 191, 0.4);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+		}
+
+		.game-btn:hover {
+			transform: scale(1.05);
+			background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+			box-shadow: 0 4px 20px rgba(157, 78, 221, 0.6);
+		}
+
+		.game-btn:active {
+			transform: scale(0.98);
+		}
+
+		.btn-danger {
+			background: linear-gradient(135deg, #ff3366 0%, #bd003c 100%);
+			box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+		}
+
+		.btn-danger:hover {
+			background: linear-gradient(135deg, #ff5c8a 0%, #ff3366 100%);
+			box-shadow: 0 4px 20px rgba(255, 51, 102, 0.6);
+		}
+
+		/* Modals */
+		.modal-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(6, 5, 11, 0.92);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 100;
+			opacity: 1;
+			transition: opacity 0.3s;
+		}
+
+		.modal-content {
+			background: linear-gradient(135deg, #141226 0%, #0a0914 100%);
+			border: 2px solid var(--neon-purple);
+			box-shadow: 0 0 25px rgba(157, 78, 221, 0.5);
+			border-radius: 16px;
+			padding: 30px;
+			width: 90%;
+			max-width: 450px;
+			text-align: center;
+			color: #fff;
+		}
+
+		.modal-title {
+			color: var(--neon-yellow);
+			font-size: 1.5rem;
+			font-weight: 800;
+			margin-bottom: 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+		}
+
+		.target-option {
+			background: rgba(255,255,255,0.04);
+			border: 1px solid rgba(157, 78, 221, 0.3);
+			border-radius: 8px;
+			padding: 12px;
+			margin-bottom: 12px;
+			font-size: 1rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.target-option:hover {
+			background: rgba(157, 78, 221, 0.15);
+			border-color: var(--neon-purple);
+			transform: translateY(-2px);
+		}
+
+		.target-option.selected {
+			background: rgba(157, 78, 221, 0.35);
+			border-color: var(--neon-blue);
+			box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+		}
+
+		.custom-input-group {
+			display: flex;
+			gap: 10px;
+			margin-top: 15px;
+		}
+
+		.custom-input {
+			flex: 1;
+			background: rgba(0,0,0,0.5);
+			border: 1px solid rgba(157, 78, 221, 0.5);
+			border-radius: 6px;
+			padding: 8px 12px;
+			color: #fff;
+			font-size: 0.95rem;
+			outline: none;
+		}
+
+		.custom-input:focus {
+			border-color: var(--neon-blue);
+			box-shadow: 0 0 5px rgba(0,240,255,0.3);
+		}
+
+		/* Excel Camouflage Sheet */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-toolbar-item {
+			cursor: pointer;
+			color: #323130;
+		}
+
+		.excel-formula-bar {
+			background-color: white;
+			border-bottom: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 0.8rem;
+		}
+
+		.excel-formula-label {
+			color: #797775;
+			font-style: italic;
+		}
+
+		.excel-formula-input {
+			border: none;
+			outline: none;
+			width: 100%;
+			font-family: Consolas, monospace;
+			color: #323130;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+			background-color: #f3f2f1;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			border: 1px solid #d2d0ce;
+			padding: 6px;
+			font-size: 0.75rem;
+			color: #323130;
+			text-align: center;
+			font-weight: normal;
+		}
+
+		.excel-table td {
+			border: 1px solid #e1dfdd;
+			padding: 6px;
+			font-size: 0.8rem;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			font-size: 0.75rem;
+			color: #505050;
+			border: 1px solid #d2d0ce !important;
+		}
+
+		.excel-boss-alert {
+			background-color: #fff;
+			border: 1px solid #d2d0ce;
+			padding: 15px;
+			border-radius: 8px;
+			margin: 20px auto;
+			width: 90%;
+			max-width: 500px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			text-align: center;
+		}
+
+		.excel-alert-title {
+			color: #107c41;
+			font-weight: bold;
+			font-size: 1.1rem;
+			margin-bottom: 10px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+		}
+
+		.excel-progress-track {
+			background: #f3f2f1;
+			border-radius: 10px;
+			height: 8px;
+			width: 100%;
+			overflow: hidden;
+			margin-top: 10px;
+		}
+
+		.excel-progress-bar {
+			background: #107c41;
+			width: 100%;
+			height: 100%;
+			transition: width 0.1s linear;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<!-- Main Canvas -->
+		<canvas id="game-canvas"></canvas>
+
+		<!-- UI stats overlay -->
+		<div class="ui-panel">
+			<div class="stats-card">
+				<div>🎯 目標: <span id="target-name-display" style="font-weight: bold; color: var(--neon-blue);">載入中</span></div>
+				<div style="margin-top: 4px;">得分: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="stats-card" style="text-align: right;">
+				<div class="combo-label" id="combo-display">Combo x0</div>
+				<div style="margin-top: 4px; font-size: 0.75rem; color: #8c89ad;">按 [空格鍵] 快速扮工</div>
+			</div>
+		</div>
+
+		<!-- UI Control buttons -->
+		<div class="btn-group">
+			<button class="game-btn btn-danger" id="feed-tiger-btn">
+				🐅 召喚紙老虎
+			</button>
+			<button class="game-btn" id="camo-btn">
+				💼 扮工模式
+			</button>
+		</div>
+
+		<!-- Target Selection Modal -->
+		<div class="modal-overlay" id="target-modal">
+			<div class="modal-content">
+				<div class="modal-title">
+					🏮 鵝頸橋打小人 🏮
+				</div>
+				<p style="font-size: 0.85rem; color: #8c89ad; margin-bottom: 20px; line-height: 1.4;">
+					歡迎嚟到銅鑼灣鵝頸橋底。揀選你要痛擊嘅小人目標，狠狠教訓佢哋！
+				</p>
+				<div class="target-option" data-target="賤格老細">
+					<span>👿 賤格老細 (Toxic Boss)</span>
+					<span style="font-size: 0.75rem; color: var(--neon-red);">怒氣度 99%</span>
+				</div>
+				<div class="target-option" data-target="二五仔同事">
+					<span>🐍 二五仔同事 (Backstabber)</span>
+					<span style="font-size: 0.75rem; color: var(--neon-red);">怒氣度 85%</span>
+				</div>
+				<div class="target-option" data-target="假面朋友">
+					<span>🤡 假面小人 (Fake Friend)</span>
+					<span style="font-size: 0.75rem; color: var(--neon-red);">怒氣度 70%</span>
+				</div>
+				<div class="custom-input-group">
+					<input type="text" class="custom-input" id="custom-target-input" placeholder="輸入你想打嘅人名字...">
+					<button class="game-btn" id="custom-target-start" style="padding: 8px 16px;">
+						出發!
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Boss Key Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - StupidPig_Villain_Hitting_Analysis_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span class="excel-toolbar-item" style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span class="excel-toolbar-item">常用</span>
+				<span class="excel-toolbar-item">插入</span>
+				<span class="excel-toolbar-item">版面配置</span>
+				<span class="excel-toolbar-item">公式</span>
+				<span class="excel-toolbar-item">資料</span>
+			</div>
+			<div class="excel-formula-bar">
+				<span class="excel-formula-label">fx</span>
+				<input type="text" class="excel-formula-input" value="=SUM(B2:B8)" readonly>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th style="width: 40px;"></th>
+							<th style="width: 250px;">A (指標項目)</th>
+							<th style="width: 150px;">B (本季進度)</th>
+							<th style="width: 150px;">C (期望績效)</th>
+							<th style="width: 200px;">D (摸魚狀態)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">鵝頸橋打小人績效匯總</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>拖鞋重擊次數 (下)</td>
+							<td id="excel-hits-count" style="font-weight: bold; color: #0071e3;">0</td>
+							<td>100</td>
+							<td style="color: #107c41; font-weight: bold;">超額完成</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>紙老虎燒紙次數 (個)</td>
+							<td id="excel-tigers-count" style="font-weight: bold; color: #0071e3;">0</td>
+							<td>10</td>
+							<td style="color: #ff8c00; font-weight: bold;">待加強</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>小人怨氣消除值</td>
+							<td id="excel-damage-count" style="font-weight: bold; color: #0071e3;">0</td>
+							<td>10000</td>
+							<td style="color: #107c41; font-weight: bold;">摸魚大師</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>老闆巡視避開率</td>
+							<td>100%</td>
+							<td>100%</td>
+							<td style="color: #107c41; font-weight: bold;">無懈可擊</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">6</td>
+							<td>當前摸魚得分</td>
+							<td id="excel-score-val" style="font-weight: bold; color: #0071e3; background-color: #e2f0d9;">0</td>
+							<td>99999</td>
+							<td style="color: #ff3366; font-weight: bold; animation: pulse 1s infinite;">進行中</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<!-- Boss alert banner in Excel -->
+				<div class="excel-boss-alert" id="excel-boss-alert" style="display: none;">
+					<div class="excel-alert-title">
+						🚨 老闆正在巡視中... (Boss Alert!)
+					</div>
+					<p style="font-size: 0.8rem; color: #505050;">
+						請保持 Excel 視窗開啟，直至老闆離開！
+					</p>
+					<div class="excel-progress-track">
+						<div class="excel-progress-bar" id="excel-boss-progress"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Setup Audio Synth using Web Audio API
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) {
+				audioCtx = new AudioContext();
+			}
+			if (audioCtx.state === 'suspended') {
+				audioCtx.resume();
+			}
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+
+				const now = audioCtx.currentTime;
+
+				if (type === 'slap') {
+					// Strike smack sound
+					// Noise buffer
+					const bufferSize = audioCtx.sampleRate * 0.12;
+					const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+					const data = buffer.getChannelData(0);
+					for (let i = 0; i < bufferSize; i++) {
+						data[i] = Math.random() * 2 - 1;
+					}
+
+					const noiseNode = audioCtx.createBufferSource();
+					noiseNode.buffer = buffer;
+
+					// Filter to make it sound solid
+					const filter = audioCtx.createBiquadFilter();
+					filter.type = 'lowpass';
+					filter.frequency.setValueAtTime(800, now);
+					filter.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+
+					// Amplitude envelope
+					const gainNode = audioCtx.createGain();
+					gainNode.gain.setValueAtTime(0.6, now);
+					gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+					// Also add a solid low thud
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(150, now);
+					osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+
+					const oscGain = audioCtx.createGain();
+					oscGain.gain.setValueAtTime(0.8, now);
+					oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+					noiseNode.connect(filter);
+					filter.connect(gainNode);
+					gainNode.connect(audioCtx.destination);
+
+					osc.connect(oscGain);
+					oscGain.connect(audioCtx.destination);
+
+					noiseNode.start(now);
+					osc.start(now);
+					noiseNode.stop(now + 0.12);
+					osc.stop(now + 0.1);
+
+				} else if (type === 'tiger') {
+					// Combustion / roar sound for Paper Tiger
+					const duration = 0.6;
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(80, now);
+					osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+					osc.frequency.exponentialRampToValueAtTime(40, now + 0.5);
+
+					const gainNode = audioCtx.createGain();
+					gainNode.gain.setValueAtTime(0.5, now);
+					gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+					// Distort / distortion bandpass
+					const bpf = audioCtx.createBiquadFilter();
+					bpf.type = 'bandpass';
+					bpf.frequency.setValueAtTime(300, now);
+					bpf.Q.setValueAtTime(3, now);
+
+					osc.connect(bpf);
+					bpf.connect(gainNode);
+					gainNode.connect(audioCtx.destination);
+
+					osc.start(now);
+					osc.stop(now + duration);
+
+				} else if (type === 'chant') {
+					// High pitch chime / ritual chant bell
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(987.77, now); // B5 note
+					osc.frequency.setValueAtTime(1318.51, now + 0.05); // E6 note
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.25);
+
+				} else if (type === 'camo') {
+					// Alert tone
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(600, now);
+					osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.15);
+				}
+			} catch(e) {
+				console.warn('Audio synthesis failed:', e);
+			}
+		}
+
+		// Game States
+		let score = 0;
+		let totalHits = 0;
+		let totalTigers = 0;
+		let targetName = '賤格老細';
+		let combo = 0;
+		let comboTimer = 0;
+		let isCamouflage = false;
+		let gameActive = false;
+
+		// Boss Alert values
+		let bossActive = false;
+		let bossAlertActive = false;
+		let bossTimer = 0;
+		let bossInterval = 500 + Math.random() * 400; // frames between boss check
+		const bossDuration = 180; // duration of boss visit (frames)
+		let bossTimerCurrent = 0;
+		const bossAlertDuration = 60; // flash indicator before boss arrives
+		let bossAlertTimer = 0;
+
+		// Visual parameters
+		let paperDollScale = 1.0;
+		let paperDollOffset = {x: 0, y: 0};
+		let paperDollBruises = []; // coordinates of bruises/hits
+		let shoeRotation = -30; // degrees
+		let shoeScale = 1.0;
+		let isStriking = false;
+		let strikeTimer = 0;
+
+		// Canvas setup
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		// Incense and Sparks particle emitters
+		let particles = [];
+		let chantTexts = []; // floaty lyrics / spells
+
+		// Traditional rhyming chant list (Cantonese Villain Hitting)
+		const CHANTS = [
+			"打你個小人頭，等你成世無出頭！",
+			"打你個小人手，等你有錢唔識收！",
+			"打你個小人腳，等你好似豬乸腳印印！",
+			"打你個小人面，等你成世黑面神！",
+			"打你個小人眼，等你有眼無珠睇唔見人！",
+			"打你個小人嘴，等你好似烏鴉啄！",
+			"打你個小人身，等你好似落湯雞噉淋！",
+			"打你個小人肚，等你好似死豬噉樣肥！"
+		];
+
+		const FLOATING_WORDS = ["啪!", "仆街!", "閃開!", "小人退散!", "開運!", "收皮啦!", "打佢!", "🥿啪!"];
+
+		// Resize handler
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		// UI Updates
+		const scoreVal = document.getElementById('score-val');
+		const comboDisplay = document.getElementById('combo-display');
+		const targetDisplay = document.getElementById('target-name-display');
+		const feedTigerBtn = document.getElementById('feed-tiger-btn');
+		const camoBtn = document.getElementById('camo-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelHitsCount = document.getElementById('excel-hits-count');
+		const excelTigersCount = document.getElementById('excel-tigers-count');
+		const excelDamageCount = document.getElementById('excel-damage-count');
+		const excelScoreVal = document.getElementById('excel-score-val');
+		const excelBossAlert = document.getElementById('excel-boss-alert');
+		const excelBossProgress = document.getElementById('excel-boss-progress');
+
+		function updateUI() {
+			scoreVal.textContent = score;
+			comboDisplay.textContent = `Combo x${combo}`;
+			targetDisplay.textContent = targetName;
+
+			// Excel spreadsheet stats mapping
+			excelHitsCount.textContent = totalHits;
+			excelTigersCount.textContent = totalTigers;
+			excelDamageCount.textContent = totalHits * 120 + totalTigers * 1500;
+			excelScoreVal.textContent = score;
+		}
+
+		// Particle System
+		function spawnSpark(x, y, color = '#ffb703') {
+			for (let i = 0; i < 15; i++) {
+				particles.push({
+					x: x,
+					y: y,
+					vx: (Math.random() - 0.5) * 8,
+					vy: (Math.random() - 0.7) * 8 - 2,
+					radius: Math.random() * 3 + 1,
+					alpha: 1.0,
+					decay: Math.random() * 0.04 + 0.02,
+					color: color
+				});
+			}
+		}
+
+		function spawnIncenseSmoke() {
+			// Center of bridge incense pot
+			const potX = canvas.width * 0.15;
+			const potY = canvas.height * 0.75;
+			if (Math.random() < 0.12) {
+				particles.push({
+					x: potX + (Math.random() - 0.5) * 10,
+					y: potY,
+					vx: (Math.random() - 0.5) * 0.8,
+					vy: -Math.random() * 1.5 - 0.5,
+					radius: Math.random() * 5 + 3,
+					alpha: 0.6,
+					decay: 0.005,
+					color: 'rgba(180, 180, 200, 0.45)',
+					isSmoke: true
+				});
+			}
+		}
+
+		function spawnChant(text, x, y) {
+			chantTexts.push({
+				text: text,
+				x: x,
+				y: y,
+				vy: -1.2,
+				alpha: 1.0,
+				life: 110,
+				fontSize: Math.floor(Math.random() * 4) + 16,
+				color: Math.random() < 0.2 ? '#00f0ff' : 'var(--neon-yellow)'
+			});
+		}
+
+		// Rendering elements
+		function drawIncenseShrine(ctx) {
+			const potX = canvas.width * 0.15;
+			const potY = canvas.height * 0.75;
+
+			// Draw bricks shrine background
+			ctx.fillStyle = '#231e39';
+			ctx.fillRect(potX - 35, potY, 70, 80);
+			ctx.strokeStyle = '#4e3b70';
+			ctx.strokeRect(potX - 35, potY, 70, 80);
+
+			// Incense pot bowl
+			ctx.fillStyle = '#ffb703';
+			ctx.beginPath();
+			ctx.arc(potX, potY, 20, 0, Math.PI, false);
+			ctx.fill();
+
+			// Red candles on sides
+			ctx.fillStyle = '#ff3366';
+			ctx.fillRect(potX - 30, potY + 15, 6, 25);
+			ctx.fillRect(potX + 24, potY + 15, 6, 25);
+
+			// Candle flame
+			ctx.fillStyle = '#ffcc00';
+			ctx.beginPath();
+			ctx.arc(potX - 27, potY + 10, 3, 0, Math.PI * 2);
+			ctx.arc(potX + 27, potY + 10, 3, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Incense sticks
+			ctx.strokeStyle = '#8b5a2b';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(potX - 5, potY);
+			ctx.lineTo(potX - 10, potY - 30);
+			ctx.moveTo(potX, potY);
+			ctx.lineTo(potX, potY - 35);
+			ctx.moveTo(potX + 5, potY);
+			ctx.lineTo(potX + 8, potY - 28);
+			ctx.stroke();
+
+			// Incense tips glow
+			ctx.fillStyle = '#ff3366';
+			ctx.beginPath();
+			ctx.arc(potX - 10, potY - 30, 2, 0, Math.PI*2);
+			ctx.arc(potX, potY - 35, 2, 0, Math.PI*2);
+			ctx.arc(potX + 8, potY - 28, 2, 0, Math.PI*2);
+			ctx.fill();
+		}
+
+		function drawBackground(ctx) {
+			// Clear background
+			ctx.fillStyle = '#06050b';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw Ngo Keng Kiu Flyover concrete pillars (鵝頸橋底)
+			ctx.fillStyle = '#141226';
+			ctx.fillRect(canvas.width * 0.4, 0, canvas.width * 0.2, canvas.height);
+			ctx.strokeStyle = '#2b2254';
+			ctx.lineWidth = 3;
+			ctx.strokeRect(canvas.width * 0.4, 0, canvas.width * 0.2, canvas.height);
+
+			// Flyover ceiling girder lines
+			ctx.fillStyle = '#0f0c1e';
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(canvas.width, 0);
+			ctx.lineTo(canvas.width, 100);
+			ctx.lineTo(0, 70);
+			ctx.closePath();
+			ctx.fill();
+
+			ctx.strokeStyle = '#231e39';
+			ctx.beginPath();
+			ctx.moveTo(0, 70);
+			ctx.lineTo(canvas.width, 100);
+			ctx.stroke();
+
+			// Concrete pillar joints / details
+			ctx.fillStyle = '#0c0a1a';
+			ctx.fillRect(canvas.width * 0.4, 180, canvas.width * 0.2, 25);
+			ctx.strokeStyle = '#2b2254';
+			ctx.strokeRect(canvas.width * 0.4, 180, canvas.width * 0.2, 25);
+
+			// Neon signs glow in background
+			ctx.shadowColor = '#ff3366';
+			ctx.fillStyle = 'rgba(255, 51, 102, 0.08)';
+			ctx.fillRect(canvas.width * 0.1, 80, 100, 150);
+
+			ctx.shadowColor = '#00f0ff';
+			ctx.fillStyle = 'rgba(0, 240, 255, 0.06)';
+			ctx.fillRect(canvas.width * 0.75, 50, 120, 200);
+
+			// Turn off shadows for next draws
+			ctx.shadowBlur = 0;
+			ctx.shadowColor = 'transparent';
+
+			// Neon Sign text outlines (Neon Cyber look)
+			ctx.strokeStyle = 'rgba(255, 51, 102, 0.35)';
+			ctx.lineWidth = 2;
+			ctx.strokeRect(canvas.width * 0.1, 80, 100, 150);
+			ctx.strokeRect(canvas.width * 0.75, 50, 120, 200);
+
+			ctx.fillStyle = 'rgba(255, 51, 102, 0.5)';
+			ctx.font = 'bold 24px Courier New';
+			ctx.fillText("港式", canvas.width * 0.1 + 26, 130);
+			ctx.fillText("小食", canvas.width * 0.1 + 26, 180);
+
+			ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+			ctx.fillText("開運招福", canvas.width * 0.75 + 12, 120);
+			ctx.fillText("祭祀祈福", canvas.width * 0.75 + 12, 170);
+
+			// Big Anvil brick (where the villain paper doll lies)
+			const anvilX = canvas.width * 0.5;
+			const anvilY = canvas.height * 0.78;
+			ctx.fillStyle = '#494056';
+			ctx.fillRect(anvilX - 90, anvilY, 180, 60);
+			ctx.strokeStyle = '#6e5e80';
+			ctx.lineWidth = 4;
+			ctx.strokeRect(anvilX - 90, anvilY, 180, 60);
+
+			// Brick textures
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+			ctx.beginPath();
+			ctx.moveTo(anvilX - 90, anvilY + 30);
+			ctx.lineTo(anvilX + 90, anvilY + 30);
+			ctx.moveTo(anvilX - 30, anvilY);
+			ctx.lineTo(anvilX - 30, anvilY + 30);
+			ctx.moveTo(anvilX + 30, anvilY + 30);
+			ctx.lineTo(anvilX + 30, anvilY + 60);
+			ctx.stroke();
+
+			// Incense Shrine drawing
+			drawIncenseShrine(ctx);
+
+			// Draw Boss alert warnings at top in game
+			if (bossAlertActive) {
+				ctx.fillStyle = 'rgba(255, 51, 102, 0.15)';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				ctx.strokeStyle = 'var(--neon-red)';
+				ctx.lineWidth = 5;
+				ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+				ctx.fillStyle = 'var(--neon-red)';
+				ctx.font = 'bold 24px Courier New';
+				ctx.textAlign = 'center';
+				ctx.fillText("⚠️ 老闆突擊檢查! BOSS ALERT! ⚠️", canvas.width / 2, 85);
+			}
+		}
+
+		function drawPaperDoll(ctx) {
+			const dollX = canvas.width * 0.5 + paperDollOffset.x;
+			const dollY = canvas.height * 0.72 + paperDollOffset.y;
+
+			ctx.save();
+			ctx.translate(dollX, dollY);
+			ctx.scale(paperDollScale, paperDollScale);
+
+			// Draw traditional white/yellow paper doll figure (小人紙)
+			ctx.fillStyle = '#fbf7dc'; // Traditional ritual paper color
+			ctx.strokeStyle = '#c4b693';
+			ctx.lineWidth = 3;
+
+			// Head
+			ctx.beginPath();
+			ctx.arc(0, -65, 22, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+
+			// Body block
+			ctx.beginPath();
+			ctx.moveTo(-15, -43);
+			ctx.lineTo(15, -43);
+			ctx.lineTo(25, 10);
+			ctx.lineTo(-25, 10);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Left arm
+			ctx.beginPath();
+			ctx.moveTo(-15, -40);
+			ctx.lineTo(-45, -25);
+			ctx.lineTo(-40, -15);
+			ctx.lineTo(-15, -30);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Right arm
+			ctx.beginPath();
+			ctx.moveTo(15, -40);
+			ctx.lineTo(45, -25);
+			ctx.lineTo(40, -15);
+			ctx.lineTo(15, -30);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Left leg
+			ctx.beginPath();
+			ctx.moveTo(-20, 10);
+			ctx.lineTo(-30, 50);
+			ctx.lineTo(-12, 50);
+			ctx.lineTo(-5, 10);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Right leg
+			ctx.beginPath();
+			ctx.moveTo(20, 10);
+			ctx.lineTo(30, 50);
+			ctx.lineTo(12, 50);
+			ctx.lineTo(5, 10);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Draw Villain target face features in cartoon style
+			ctx.fillStyle = '#333';
+			ctx.font = 'bold 13px Arial';
+			ctx.textAlign = 'center';
+			ctx.fillText(targetName.substring(0, 4), 0, -15);
+
+			// Villain facial expressions (angry/crying/scared)
+			ctx.strokeStyle = '#b23b3b';
+			ctx.lineWidth = 2;
+
+			// Angry eyebrows
+			ctx.beginPath();
+			ctx.moveTo(-12, -72); ctx.lineTo(-4, -68);
+			ctx.moveTo(12, -72); ctx.lineTo(4, -68);
+			// Eyes (swirl / cross / hurt)
+			ctx.moveTo(-10, -62); ctx.lineTo(-6, -62);
+			ctx.moveTo(6, -62); ctx.lineTo(10, -62);
+			// Crying tear lines
+			ctx.moveTo(-8, -60); ctx.lineTo(-8, -52);
+			ctx.moveTo(8, -60); ctx.lineTo(8, -52);
+			// Squiggly mouth
+			ctx.moveTo(-8, -50);
+			ctx.quadraticCurveTo(0, -56, 8, -50);
+			ctx.stroke();
+
+			// Draw Bruises (red/purple stamps on the doll)
+			paperDollBruises.forEach(bruise => {
+				ctx.fillStyle = bruise.color;
+				ctx.beginPath();
+				ctx.arc(bruise.x, bruise.y, bruise.size, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Small 'X' inside bruises
+				ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				ctx.moveTo(bruise.x - 3, bruise.y - 3); ctx.lineTo(bruise.x + 3, bruise.y + 3);
+				ctx.moveTo(bruise.x - 3, bruise.y + 3); ctx.lineTo(bruise.x + 3, bruise.y - 3);
+				ctx.stroke();
+			});
+
+			ctx.restore();
+		}
+
+		function drawShoe(ctx) {
+			const anvilX = canvas.width * 0.5;
+			const anvilY = canvas.height * 0.72;
+
+			ctx.save();
+			// Position the shoe pivot slightly to the side when striking
+			if (isStriking) {
+				ctx.translate(anvilX + 50, anvilY - 120);
+			} else {
+				ctx.translate(anvilX + 90, anvilY - 90);
+			}
+			ctx.rotate((shoeRotation * Math.PI) / 180);
+			ctx.scale(shoeScale, shoeScale);
+
+			// Draw retro red plastic slipper (經典紅白塑膠拖鞋)
+			// Slipper sole base
+			ctx.fillStyle = '#bd003c'; // Dark red
+			ctx.beginPath();
+			// Draw oval slipper shape
+			ctx.ellipse(0, 0, 18, 45, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Sole border line
+			ctx.strokeStyle = '#fff';
+			ctx.lineWidth = 3;
+			ctx.stroke();
+
+			// Slipper inner sole overlay (White top half)
+			ctx.fillStyle = '#fff';
+			ctx.beginPath();
+			ctx.ellipse(0, -12, 14, 25, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Slipper red strap
+			ctx.fillStyle = 'rgba(255, 51, 102, 0.9)';
+			ctx.beginPath();
+			ctx.moveTo(-16, -10);
+			ctx.quadraticCurveTo(0, -32, 16, -10);
+			ctx.quadraticCurveTo(0, -2, -16, -10);
+			ctx.fill();
+
+			ctx.restore();
+		}
+
+		function updateParticles() {
+			// Update regular particles
+			for (let i = particles.length - 1; i >= 0; i--) {
+				const p = particles[i];
+				p.x += p.vx;
+				p.y += p.vy;
+				p.alpha -= p.decay;
+
+				if (p.isSmoke) {
+					p.vx += (Math.random() - 0.5) * 0.2; // wobble
+					p.radius += 0.05; // smoke expands
+				}
+
+				if (p.alpha <= 0) {
+					particles.splice(i, 1);
+				}
+			}
+
+			// Update floaty texts
+			for (let i = chantTexts.length - 1; i >= 0; i--) {
+				const c = chantTexts[i];
+				c.y += c.vy;
+				c.life--;
+				if (c.life <= 0) {
+					chantTexts.splice(i, 1);
+				}
+			}
+		}
+
+		function drawParticles(ctx) {
+			// Render incense smoke & impact sparks
+			particles.forEach(p => {
+				ctx.save();
+				ctx.globalAlpha = p.alpha;
+				ctx.fillStyle = p.color;
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.restore();
+			});
+
+			// Render floating chanting rhymes
+			ctx.textAlign = 'center';
+			chantTexts.forEach(c => {
+				ctx.save();
+				ctx.globalAlpha = Math.min(1.0, c.life / 20);
+				ctx.fillStyle = c.color;
+				ctx.font = `bold ${c.fontSize}px Courier New`;
+				// Shadow for readability
+				ctx.shadowColor = '#000000';
+				ctx.shadowBlur = 4;
+				ctx.fillText(c.text, c.x, c.y);
+				ctx.restore();
+			});
+		}
+
+		function speakSentence(text) {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel(); // cancel previous speaking queue
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.lang = 'zh-HK'; // Cantonese speech voice
+				utterance.rate = 1.05;    // Traditional chanting speed
+				utterance.pitch = 0.95;   // Low pitch for senior lady voice
+				window.speechSynthesis.speak(utterance);
+			}
+		}
+
+		// Click to Strike action
+		function performStrike() {
+			if (isCamouflage || isStriking) return;
+
+			isStriking = true;
+			strikeTimer = 0;
+			playSound('slap');
+
+			// Add score and score combos
+			totalHits++;
+			combo++;
+			comboTimer = 180; // combo stays active for 3 seconds (180 frames)
+
+			const damage = Math.floor(100 * (1 + combo * 0.1));
+			score += damage;
+
+			// Add doll bruise stamps
+			const bx = (Math.random() - 0.5) * 26;
+			const by = -60 + Math.random() * 95;
+			const bruiseColor = Math.random() < 0.5 ? 'rgba(157, 78, 221, 0.65)' : 'rgba(255, 51, 102, 0.65)';
+			paperDollBruises.push({
+				x: bx,
+				y: by,
+				size: Math.random() * 5 + 4,
+				color: bruiseColor
+			});
+
+			// Truncate old bruises to prevent lag
+			if (paperDollBruises.length > 50) {
+				paperDollBruises.shift();
+			}
+
+			// Spawn Sparks at Strike point
+			const hitX = canvas.width * 0.5 + bx;
+			const hitY = canvas.height * 0.72 + by;
+			spawnSpark(hitX, hitY, '#ff3366');
+
+			// Spawn random floaty word & traditional spell chant
+			if (totalHits % 3 === 0) {
+				const rhyme = CHANTS[Math.floor(Math.random() * CHANTS.length)];
+				spawnChant(rhyme, canvas.width * 0.5, canvas.height * 0.4 + (Math.random() - 0.5) * 30);
+				playSound('chant');
+				speakSentence(rhyme);
+			} else {
+				const word = FLOATING_WORDS[Math.floor(Math.random() * FLOATING_WORDS.length)];
+				spawnChant(word, hitX, hitY - 40);
+			}
+
+			updateUI();
+			submitScoreToParent(score);
+		}
+
+		// Spawn Paper Tiger (紙老虎)
+		function summonPaperTiger() {
+			if (isCamouflage || score < 500) return;
+
+			score -= 500;
+			totalTigers++;
+			playSound('tiger');
+			spawnSpark(canvas.width * 0.5, canvas.height * 0.7, '#ffb703');
+
+			// Giant fire flare particle effect
+			for (let i = 0; i < 40; i++) {
+				particles.push({
+					x: canvas.width * 0.5 + (Math.random() - 0.5) * 80,
+					y: canvas.height * 0.7 + (Math.random() - 0.5) * 40,
+					vx: (Math.random() - 0.5) * 12,
+					vy: -Math.random() * 12 - 4,
+					radius: Math.random() * 12 + 6,
+					alpha: 1.0,
+					decay: Math.random() * 0.05 + 0.03,
+					color: Math.random() < 0.6 ? '#ffb703' : '#ff3366'
+				});
+			}
+
+			// Large bonus popups
+			score += 3000;
+			spawnChant("🐅 紙老虎咬退小人！+3000 BONUS!", canvas.width * 0.5, canvas.height * 0.45);
+			updateUI();
+			submitScoreToParent(score);
+		}
+
+		// Animation loop
+		function gameLoop() {
+			// Update Boss Alert values
+			updateCamouflageMode();
+
+			// Generate environment smoke
+			spawnIncenseSmoke();
+
+			// Update particles & floats
+			updateParticles();
+
+			// Strike animation updates
+			if (isStriking) {
+				strikeTimer++;
+				if (strikeTimer <= 4) {
+					// Swing slipper down
+					shoeRotation = -30 + (strikeTimer / 4) * 80;
+					paperDollScale = 1.0 - (strikeTimer / 4) * 0.15;
+					paperDollOffset.y = (strikeTimer / 4) * 10;
+				} else if (strikeTimer <= 8) {
+					// Recoil slipper up
+					shoeRotation = 50 - ((strikeTimer - 4) / 4) * 80;
+					paperDollScale = 0.85 + ((strikeTimer - 4) / 4) * 0.15;
+					paperDollOffset.y = 10 - ((strikeTimer - 4) / 4) * 10;
+				} else {
+					isStriking = false;
+					shoeRotation = -30;
+					paperDollScale = 1.0;
+					paperDollOffset = {x: 0, y:0};
+				}
+			}
+
+			// Combo decrease timer
+			if (comboTimer > 0) {
+				comboTimer--;
+				if (comboTimer === 0) {
+					combo = 0;
+					updateUI();
+				}
+			}
+
+			// Render view
+			drawBackground(ctx);
+			drawPaperDoll(ctx);
+			drawShoe(ctx);
+			drawParticles(ctx);
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Camouflage sheet background update
+		function updateCamouflageMode() {
+			if (!isCamouflage) return;
+
+			// Progress bar updates while hiding
+			if (bossActive) {
+				const percent = ((bossDuration - bossTimerCurrent) / bossDuration) * 100;
+				excelBossProgress.style.width = `${percent}%`;
+				bossTimerCurrent--;
+				if (bossTimerCurrent <= 0) {
+					bossActive = false;
+					bossTimer = 0;
+					bossInterval = 500 + Math.random() * 400;
+					isCamouflage = false;
+					camoOverlay.style.display = 'none';
+					playSound('camo');
+				}
+			} else if (bossAlertActive) {
+				const percent = ((bossAlertDuration - bossAlertTimer) / bossAlertDuration) * 100;
+				excelBossProgress.style.width = `${percent}%`;
+				bossAlertTimer--;
+				if (bossAlertTimer <= 0) {
+					bossAlertActive = false;
+					bossActive = true;
+					bossTimerCurrent = bossDuration;
+				}
+			} else {
+				// Keep boss progress static for manually triggered camouflage
+				excelBossProgress.style.width = '100%';
+			}
+		}
+
+		// Toggle camouflage handler
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			playSound('camo');
+
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+				// Trigger Boss warning randomly or when manual
+				if (Math.random() < 0.4 && !bossAlertActive && !bossActive) {
+					bossAlertActive = true;
+					bossAlertTimer = bossAlertDuration;
+					excelBossAlert.style.display = 'block';
+				} else {
+					excelBossAlert.style.display = 'none';
+				}
+			} else {
+				camoOverlay.style.display = 'none';
+				bossActive = false;
+				bossAlertActive = false;
+			}
+			updateUI();
+		}
+
+		// Submit score telemetry
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'villain-hitting',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		// Mouse/Touch triggers for striking
+		canvas.addEventListener('mousedown', function(e) {
+			performStrike();
+		});
+
+		canvas.addEventListener('touchstart', function(e) {
+			e.preventDefault(); // prevent double trigger
+			performStrike();
+		}, {passive: false});
+
+		// Buttons events
+		feedTigerBtn.addEventListener('click', function(e) {
+			e.stopPropagation();
+			summonPaperTiger();
+		});
+
+		camoBtn.addEventListener('click', function(e) {
+			e.stopPropagation();
+			toggleCamouflage();
+		});
+
+		// Keyboard controls
+		window.addEventListener('keydown', function(e) {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			} else if (e.code === 'KeyU' || e.code === 'Enter') {
+				performStrike();
+			} else if (e.code === 'KeyI') {
+				summonPaperTiger();
+			}
+		});
+
+		// Target Selection Modal Setup
+		const targetModal = document.getElementById('target-modal');
+		const targetOptions = document.querySelectorAll('.target-option');
+		const customTargetInput = document.getElementById('custom-target-input');
+		const customTargetStartBtn = document.getElementById('custom-target-start');
+
+		targetOptions.forEach(opt => {
+			opt.addEventListener('click', function() {
+				targetName = this.getAttribute('data-target');
+				targetModal.style.opacity = 0;
+				setTimeout(() => {
+					targetModal.style.display = 'none';
+					gameActive = true;
+				}, 300);
+				updateUI();
+			});
+		});
+
+		customTargetStartBtn.addEventListener('click', function() {
+			const val = customTargetInput.value.trim();
+			if (val) {
+				targetName = val;
+				targetModal.style.opacity = 0;
+				setTimeout(() => {
+					targetModal.style.display = 'none';
+					gameActive = true;
+				}, 300);
+				updateUI();
+			}
+		});
+
+		// Start Animation Loop
+		gameLoop();
+	</script>
+</body>
+</html>

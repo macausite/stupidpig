@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>茶餐廳夥計瘋狂接單 (Cha Chaan Teng Waiter Frenzy)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-yellow: #ffaa00;
+			--neon-green: #00ff66;
+			--cstyle-red: #ff3333;
+			--retro-teal: #1a4d4d;
+			--bg-dark: #0a0b12;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(255, 170, 0, 0.45);
+			border-radius: 12px;
+			box-shadow: 0 0 30px rgba(255, 170, 0, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD Stats */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(255, 170, 0, 0.4);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--neon-yellow);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Patron Order Speech Bubble */
+		.order-bubble {
+			position: absolute;
+			top: 85px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: #fbf5e6;
+			border: 3px solid #ffaa00;
+			border-radius: 12px;
+			padding: 12px 24px;
+			color: #3d1c1c;
+			width: 85%;
+			max-width: 420px;
+			text-align: center;
+			z-index: 10;
+			box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+			pointer-events: none;
+		}
+
+		.patience-bar-container {
+			width: 100%;
+			height: 6px;
+			background: #e0d9c5;
+			border-radius: 3px;
+			overflow: hidden;
+			margin-top: 8px;
+		}
+
+		.patience-bar {
+			width: 100%;
+			height: 100%;
+			background-color: var(--neon-green);
+			transition: width 0.1s linear, background-color 0.3s;
+		}
+
+		/* Slang Buttons Board */
+		.controls-panel {
+			position: absolute;
+			bottom: 20px;
+			left: 15px;
+			right: 15px;
+			z-index: 20;
+		}
+
+		.options-grid {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+			margin-bottom: 12px;
+		}
+
+		.slang-btn {
+			background: linear-gradient(180deg, #1b3535 0%, #0d1e1e 100%);
+			border: 1px solid rgba(0, 255, 102, 0.25);
+			color: #fff;
+			padding: 14px;
+			border-radius: 8px;
+			font-size: 0.95rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.15s;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.slang-btn:hover {
+			border-color: var(--neon-green);
+			box-shadow: 0 4px 15px rgba(0, 255, 102, 0.25);
+			background: linear-gradient(180deg, #224343 0%, #102626 100%);
+		}
+
+		.slang-btn:active {
+			transform: scale(0.98);
+		}
+
+		.slang-btn.correct-flash {
+			background: linear-gradient(180deg, #1b5e20 0%, #0d3c13 100%) !important;
+			border-color: var(--neon-green) !important;
+		}
+
+		.slang-btn.wrong-flash {
+			background: linear-gradient(180deg, #b71c1c 0%, #7f0000 100%) !important;
+			border-color: var(--cstyle-red) !important;
+		}
+
+		/* VIP Mini game layout */
+		.vip-recipe-box {
+			background: #2a1b1b;
+			border: 2px solid var(--cstyle-red);
+			border-radius: 10px;
+			padding: 12px;
+			color: #fff;
+			display: none;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.vip-ingredients {
+			display: flex;
+			justify-content: space-around;
+			gap: 8px;
+		}
+
+		.ingredient-btn {
+			background: #3d2b2b;
+			border: 1px solid rgba(255, 51, 51, 0.4);
+			padding: 10px;
+			border-radius: 6px;
+			flex: 1;
+			cursor: pointer;
+			text-align: center;
+			font-weight: bold;
+			font-size: 0.8rem;
+		}
+
+		.ingredient-btn.active {
+			background: #b32424;
+			border-color: var(--cstyle-red);
+			box-shadow: 0 0 10px rgba(255,51,51,0.5);
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD panel -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🧑‍🍳 茶餐廳夥計瘋狂接單</div>
+				<div style="margin-top: 4px;">今日營業額: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div id="combo-display" style="font-weight: bold; color: var(--neon-yellow);">Combo: 0</div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Speech Bubble -->
+		<div class="order-bubble" id="order-bubble">
+			<div style="font-size:0.75rem; color:#8c89ad; font-weight:bold; letter-spacing:1px;" id="order-type">🐷 餓豬食客：「阿伯，我要...」</div>
+			<div style="font-size:1.6rem; font-weight:900; color:#b32424; margin:6px 0;" id="order-slang">飛沙走奶！</div>
+			<div class="patience-bar-container">
+				<div class="patience-bar" id="patience-bar"></div>
+			</div>
+		</div>
+
+		<!-- Controls Board -->
+		<div class="controls-panel">
+			<!-- Slang buttons -->
+			<div class="options-grid" id="options-grid">
+				<!-- JavaScript populated -->
+			</div>
+
+			<!-- VIP Mini-game recipe block -->
+			<div class="vip-recipe-box" id="vip-box">
+				<div style="font-size:0.8rem; font-weight:bold; text-align:center; color:var(--neon-yellow);">
+					🔥 招牌焗豬扒飯配蒜蓉意粉製作工序 (Tap in order!)
+				</div>
+				<div class="vip-ingredients" id="ingredients-list">
+					<div class="ingredient-btn" data-step="0">1. 豬扒 (Pork)</div>
+					<div class="ingredient-btn" data-step="1">2. 炒飯/意粉 (Base)</div>
+					<div class="ingredient-btn" data-step="2">3. 茄汁 (Tomato)</div>
+					<div class="ingredient-btn" data-step="3">4. 芝士 (Cheese)</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - ChaChaanTeng_Daily_Inventory_Report.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>收支報表</span>
+				<span>食材庫存</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (食材)</th>
+							<th>B (剩餘庫存)</th>
+							<th>C (今日消耗)</th>
+							<th>D (累計所得營業額)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">夥計食材盤點報表</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>豬扒 (塊)</td>
+							<td>45</td>
+							<td>82</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>白米 (kg)</td>
+							<td>120</td>
+							<td>54</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>檸檬 (個)</td>
+							<td>85</td>
+							<td>60</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>煉奶 (罐)</td>
+							<td>32</td>
+							<td>24</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Web Audio synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'bell') {
+					// Ding bell (classic diner service bell)
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(1046.50, now); // C6
+					osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.3, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.5);
+				} else if (type === 'fail') {
+					// Plate breaking noise / dull thud
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(100, now);
+					osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.25);
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		function speakSentence(text) {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.lang = 'zh-HK';
+				utterance.rate = 1.05;
+				utterance.pitch = 1.0;
+				window.speechSynthesis.speak(utterance);
+			}
+		}
+
+		// Game orders database
+		const ORDERS_DB = [
+			{ slang: "飛沙走奶", match: "齋啡 (Black Coffee)", audio: "整杯飛沙走奶呀，唔該！" },
+			{ slang: "靚仔", match: "白飯 (White Rice)", audio: "整碗靚仔！" },
+			{ slang: "甩色", match: "凍檸茶 (Iced Lemon Tea)", audio: "我要一杯甩色！" },
+			{ slang: "茶走", match: "煉奶奶茶 (Condensed Milk Tea)", audio: "夥計，茶走一杯！" },
+			{ slang: "打爛", match: "炒飯 (Fried Rice)", audio: "廚房，打爛一客！" },
+			{ slang: "細蓉", match: "雲吞麵 (Wonton Noodles)", audio: "細蓉一碗，唔該！" }
+		];
+
+		let score = 0;
+		let combo = 0;
+		let isCamouflage = false;
+
+		// Timer parameters
+		let patienceMax = 400; // frames
+		let patienceVal = 400;
+		let currentOrder = ORDERS_DB[0];
+		let isVipActive = false;
+		let vipStep = 0;
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const scoreVal = document.getElementById('score-val');
+		const comboDisplay = document.getElementById('combo-display');
+		const orderBubble = document.getElementById('order-bubble');
+		const orderType = document.getElementById('order-type');
+		const orderSlang = document.getElementById('order-slang');
+		const patienceBar = document.getElementById('patience-bar');
+		const optionsGrid = document.getElementById('options-grid');
+
+		const vipBox = document.getElementById('vip-box');
+		const ingredientBtns = document.querySelectorAll('.ingredient-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function generateOptions() {
+			optionsGrid.innerHTML = '';
+			const correct = currentOrder.match;
+			// Gather random wrong options
+			const wrongs = ORDERS_DB.filter(o => o.match !== correct).map(o => o.match);
+			// Shuffle and pick 3
+			wrongs.sort(() => Math.random() - 0.5);
+			const opts = [correct, ...wrongs.slice(0, 3)];
+			opts.sort(() => Math.random() - 0.5);
+
+			opts.forEach(o => {
+				const btn = document.createElement('button');
+				btn.className = 'slang-btn';
+				btn.innerHTML = `<span>${o}</span>`;
+				btn.addEventListener('click', (e) => handleOptionClick(btn, o));
+				btn.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					handleOptionClick(btn, o);
+				});
+				optionsGrid.appendChild(btn);
+			});
+		}
+
+		function setupNextOrder() {
+			// Reset recipe highlighting
+			ingredientBtns.forEach(btn => btn.classList.remove('active'));
+
+			// 20% chance of VIP guest ordering baked pork chop rice combo
+			if (Math.random() < 0.22 && combo >= 2) {
+				isVipActive = true;
+				vipStep = 0;
+				optionsGrid.style.display = 'none';
+				vipBox.style.display = 'flex';
+
+				orderType.textContent = "🔥 招牌貴賓食客：「夥計！」";
+				orderSlang.textContent = "焗豬扒飯配蒜蓉意粉！";
+				speakSentence("唔該，我要招牌焗豬扒飯配蒜蓉意粉！");
+				patienceMax = 600; // longer patience for recipe assembly
+				patienceVal = 600;
+			} else {
+				isVipActive = false;
+				optionsGrid.style.display = 'grid';
+				vipBox.style.display = 'none';
+
+				currentOrder = ORDERS_DB[Math.floor(Math.random() * ORDERS_DB.length)];
+				orderType.textContent = "🐷 餓豬食客：「阿伯，我要...」";
+				orderSlang.textContent = currentOrder.slang;
+				speakSentence(currentOrder.audio);
+
+				patienceMax = Math.max(180, 400 - combo * 15);
+				patienceVal = patienceMax;
+				generateOptions();
+			}
+		}
+
+		function handleOptionClick(btn, selected) {
+			if (isCamouflage || isVipActive) return;
+
+			if (selected === currentOrder.match) {
+				btn.classList.add('correct-flash');
+				combo++;
+				score += 150 + combo * 20;
+
+				playSound('bell');
+				scoreVal.textContent = score;
+				comboDisplay.textContent = `Combo: ${combo}`;
+				excelScoreVal.textContent = score;
+
+				submitScoreToParent(score);
+				setTimeout(setupNextOrder, 400);
+			} else {
+				btn.classList.add('wrong-flash');
+				combo = 0;
+				comboDisplay.textContent = `Combo: 0`;
+				playSound('fail');
+			}
+		}
+
+		// VIP mini game logic
+		ingredientBtns.forEach(btn => {
+			const clickHandler = (e) => {
+				if (isCamouflage || !isVipActive) return;
+				const step = parseInt(btn.getAttribute('data-step'), 10);
+
+				if (step === vipStep) {
+					btn.classList.add('active');
+					vipStep++;
+
+					if (vipStep === 4) {
+						// Completed the recipe!
+						combo += 3;
+						score += 1000 + combo * 50;
+
+						playSound('bell');
+						scoreVal.textContent = score;
+						comboDisplay.textContent = `Combo: ${combo}`;
+						excelScoreVal.textContent = score;
+
+						submitScoreToParent(score);
+						setTimeout(setupNextOrder, 500);
+					}
+				} else {
+					// Wrong step resets recipe process
+					ingredientBtns.forEach(b => b.classList.remove('active'));
+					vipStep = 0;
+					playSound('fail');
+				}
+			};
+
+			btn.addEventListener('click', clickHandler);
+			btn.addEventListener('touchstart', (e) => {
+				e.preventDefault();
+				clickHandler(e);
+			});
+		});
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'waiter-frenzy',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		function drawTiledCafe(ctx) {
+			// Draw classic retro green mosaic tiles (HK cafe layout)
+			ctx.fillStyle = '#1c2826';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Tile grid
+			ctx.strokeStyle = '#2b3f3c';
+			ctx.lineWidth = 1;
+			const tileSize = 40;
+			for (let x = 0; x < canvas.width; x += tileSize) {
+				ctx.beginPath();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, canvas.height);
+				ctx.stroke();
+			}
+			for (let y = 0; y < canvas.height; y += tileSize) {
+				ctx.beginPath();
+				ctx.moveTo(0, y);
+				ctx.lineTo(canvas.width, y);
+				ctx.stroke();
+			}
+
+			// Service bar counter ledge
+			ctx.fillStyle = '#5c4033';
+			ctx.fillRect(0, canvas.height * 0.42, canvas.width, 24);
+			ctx.strokeStyle = '#2d1f18';
+			ctx.strokeRect(0, canvas.height * 0.42, canvas.width, 24);
+		}
+
+		function gameLoop() {
+			drawTiledCafe(ctx);
+
+			if (!isCamouflage) {
+				patienceVal--;
+
+				// Update bar visual
+				const percentage = (patienceVal / patienceMax) * 100;
+				patienceBar.style.width = `${percentage}%`;
+
+				if (percentage > 50) {
+					patienceBar.style.backgroundColor = 'var(--neon-green)';
+				} else if (percentage > 25) {
+					patienceBar.style.backgroundColor = 'var(--neon-yellow)';
+				} else {
+					patienceBar.style.backgroundColor = 'var(--cstyle-red)';
+				}
+
+				if (patienceVal <= 0) {
+					// patience runs out, patron leaves angry!
+					combo = 0;
+					comboDisplay.textContent = `Combo: 0`;
+					playSound('fail');
+					setupNextOrder();
+				}
+			}
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Start
+		setupNextOrder();
+		gameLoop();
+	</script>
+</body>
+</html>

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>澳葡夜市掟彩虹 (Macau Night Market Rainbow Toss)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-pink: #ff2a85;
+			--neon-blue: #00f0ff;
+			--gold: #ffd700;
+			--bg-dark: #08060c;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(255, 42, 133, 0.4);
+			border-radius: 12px;
+			box-shadow: 0 0 30px rgba(255, 42, 133, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD and Panels */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(255, 42, 133, 0.35);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Bottom Control buttons and shop */
+		.control-bar {
+			position: absolute;
+			bottom: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			z-index: 20;
+		}
+
+		.game-btn {
+			background: linear-gradient(180deg, #ff2a85 0%, #b30052 100%);
+			color: #fff;
+			border: 1px solid rgba(255,255,255,0.2);
+			padding: 10px 18px;
+			border-radius: 8px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 12px rgba(255, 42, 133, 0.3);
+		}
+
+		.game-btn:hover {
+			transform: scale(1.03);
+			box-shadow: 0 4px 16px rgba(255, 42, 133, 0.45);
+		}
+
+		/* Prize Showcase Shelf */
+		.shelf-card {
+			position: absolute;
+			top: 90px;
+			right: 15px;
+			width: 150px;
+			background: rgba(11, 9, 20, 0.8);
+			border: 1px solid rgba(0, 240, 255, 0.3);
+			border-radius: 8px;
+			padding: 10px;
+			color: #fff;
+			z-index: 10;
+			font-size: 0.8rem;
+		}
+
+		.shelf-title {
+			font-weight: bold;
+			color: var(--neon-blue);
+			margin-bottom: 8px;
+			text-align: center;
+			border-bottom: 1px dashed rgba(0,240,255,0.2);
+			padding-bottom: 4px;
+		}
+
+		.shelf-item {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			margin-bottom: 4px;
+		}
+
+		/* Shop Overlay Modal */
+		.shop-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(8, 6, 12, 0.88);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 100;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+
+		.shop-content {
+			background: #161424;
+			border: 2px solid var(--neon-pink);
+			border-radius: 12px;
+			padding: 24px;
+			width: 90%;
+			max-width: 440px;
+			color: #fff;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+			text-align: center;
+		}
+
+		.shop-title {
+			color: var(--neon-pink);
+			font-size: 1.4rem;
+			font-weight: bold;
+			margin-bottom: 15px;
+			border-bottom: 1px solid rgba(255, 42, 133, 0.25);
+			padding-bottom: 8px;
+		}
+
+		.shop-grid {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
+			margin-bottom: 20px;
+		}
+
+		.shop-card {
+			background: #232038;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 8px;
+			padding: 12px 6px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.shop-card:hover {
+			border-color: var(--neon-blue);
+			background: #2b2744;
+		}
+
+		.shop-card.owned {
+			opacity: 0.6;
+			border-color: var(--gold);
+		}
+
+		.prize-emoji {
+			font-size: 2.2rem;
+			margin-bottom: 6px;
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD overlay -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🎪 澳葡夜市掟彩虹</div>
+				<div style="margin-top: 4px;">銀主分數: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div>獎品禮券: <span class="score-label" id="ticket-val" style="color: var(--neon-pink);">0</span></div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Prize Display Shelf -->
+		<div class="shelf-card">
+			<div class="shelf-title">🏆 收藏珍藏品</div>
+			<div id="shelf-list">
+				<div style="color: #666; font-style: italic;">未解鎖任何珍藏</div>
+			</div>
+		</div>
+
+		<!-- Control Buttons -->
+		<div class="control-bar">
+			<div style="color: #8c89ad; font-size: 0.75rem;">拖曳並釋放投擲金幣 (Drag & throw coin)</div>
+			<div style="display: flex; gap: 8px;">
+				<button class="game-btn" id="open-shop-btn" style="background: linear-gradient(180deg, #00f0ff 0%, #00a4b3 100%); text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+					🛍️ 兌換獎品 (Shop)
+				</button>
+			</div>
+		</div>
+
+		<!-- Shop Modal -->
+		<div class="shop-overlay" id="shop-modal">
+			<div class="shop-content">
+				<div class="shop-title">夜市獎品兌換處</div>
+				<div style="margin-bottom: 12px; font-size: 0.85rem; color: #aaa;">
+					可用禮券: <span id="shop-ticket-count" style="color: var(--neon-pink); font-weight: bold;">0</span> 張
+				</div>
+				<div class="shop-grid" id="shop-grid">
+					<!-- Populated by JavaScript -->
+				</div>
+				<button class="game-btn" id="close-shop-btn" style="padding: 8px 24px;">關閉 (Close)</button>
+			</div>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - RainbowToss_Probability_Audit_2026.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>常用公式</span>
+				<span>投擲統計</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (投擲狀態)</th>
+							<th>B (獲得禮券)</th>
+							<th>C (砸界率)</th>
+							<th>D (累計所得分數)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">彩虹機率精算報表</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>大吉藍圈 (Jackpot)</td>
+							<td>10</td>
+							<td>3.2%</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>中吉黃圈</td>
+							<td>5</td>
+							<td>12.5%</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>外圍紅圈</td>
+							<td>2</td>
+							<td>24.8%</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>砸界出局 (Touched line)</td>
+							<td>0</td>
+							<td>59.5%</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Setup Audio synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'clink') {
+					// Metal coin clink
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(1500, now);
+					osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.1);
+				} else if (type === 'bounce') {
+					// Dull metal table bounce
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(220, now);
+					osc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.18, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.08);
+				} else if (type === 'win') {
+					// Happy ticket sound
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(523.25, now); // C5
+					osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+					osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.4);
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		// Game state
+		let score = 0;
+		let tickets = 0;
+		let isCamouflage = false;
+
+		// Rainbow board parameters (concentric arcs at top center)
+		let boardX = 400;
+		let boardY = 220;
+		let boardRadii = [60, 100, 140, 180, 220]; // Jackpot (blue) to Outer (red)
+		let boardColors = ['#00d2ff', '#00ff66', '#ffdd00', '#ff9f00', '#ff2a55']; // inner to outer
+		let borderLineWidth = 2.5;
+
+		// Coin physics
+		let coin = {
+			x: 400,
+			y: 500,
+			vx: 0,
+			vy: 0,
+			vz: 0, // Vertical speed for parabola throw effect
+			z: 0,  // Scale / height offset
+			radius: 11,
+			isFlying: false,
+			isBouncing: false,
+			bounces: 0
+		};
+
+		// Throw drag vector
+		let dragStart = { x: 0, y: 0 };
+		let dragCurrent = { x: 0, y: 0 };
+		let isDragging = false;
+
+		// Floating feedback text
+		let textFloats = [];
+
+		// Prizes Shop database
+		const PRIZES = [
+			{ id: 'tart', name: '葡式蛋撻 (Egg Tart)', emoji: '🥮', cost: 10, points: 500, owned: false },
+			{ id: 'ruins', name: '大三巴模型 (Ruins)', emoji: '🏛️', cost: 30, points: 2000, owned: false },
+			{ id: 'kumquat', name: '開運桔子樹 (Orange)', emoji: '🍊', cost: 60, points: 5000, owned: false },
+			{ id: 'pig', name: '黃金傻豬像 (Golden)', emoji: '🐷', cost: 120, points: 12000, owned: false }
+		];
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+			boardX = canvas.width * 0.5;
+			boardY = canvas.height * 0.38;
+			if (!coin.isFlying) {
+				coin.x = canvas.width * 0.5;
+				coin.y = canvas.height * 0.88;
+			}
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const scoreVal = document.getElementById('score-val');
+		const ticketVal = document.getElementById('ticket-val');
+		const shelfList = document.getElementById('shelf-list');
+		const shopModal = document.getElementById('shop-modal');
+		const shopGrid = document.getElementById('shop-grid');
+		const shopTicketCount = document.getElementById('shop-ticket-count');
+
+		const openShopBtn = document.getElementById('open-shop-btn');
+		const closeShopBtn = document.getElementById('close-shop-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function spawnTextFloat(text, x, y, color = '#fff') {
+			textFloats.push({
+				text: text,
+				x: x,
+				y: y,
+				vy: -1.0,
+				alpha: 1.0,
+				life: 60,
+				color: color
+			});
+		}
+
+		// Shop setup
+		function updateShop() {
+			shopTicketCount.textContent = tickets;
+			shopGrid.innerHTML = '';
+
+			PRIZES.forEach(p => {
+				const card = document.createElement('div');
+				card.className = `shop-card ${p.owned ? 'owned' : ''}`;
+				card.innerHTML = `
+					<div class="prize-emoji">${p.emoji}</div>
+					<div style="font-weight:bold; font-size:0.85rem; margin-bottom:4px;">${p.name}</div>
+					<div style="font-size:0.75rem; color:#aaa; margin-bottom:8px;">需 ${p.cost} 禮券</div>
+					<div style="font-size:0.7rem; color:#00ff66; font-weight:bold;">+${p.points} 摸魚分</div>
+				`;
+				if (!p.owned) {
+					card.addEventListener('click', () => buyPrize(p));
+				}
+				shopGrid.appendChild(card);
+			});
+
+			// Update display shelf
+			const owned = PRIZES.filter(p => p.owned);
+			if (owned.length === 0) {
+				shelfList.innerHTML = `<div style="color: #666; font-style: italic;">未解鎖任何珍藏</div>`;
+			} else {
+				shelfList.innerHTML = '';
+				owned.forEach(o => {
+					const div = document.createElement('div');
+					div.className = 'shelf-item';
+					div.innerHTML = `<span>${o.emoji}</span><span>${o.name.split(' ')[0]}</span>`;
+					shelfList.appendChild(div);
+				});
+			}
+		}
+
+		function buyPrize(p) {
+			if (tickets >= p.cost) {
+				tickets -= p.cost;
+				p.owned = true;
+				score += p.points;
+
+				playSound('win');
+				spawnTextFloat(`解鎖 ${p.name.split(' ')[0]}!`, canvas.width * 0.5, canvas.height * 0.5, varColor(p.id));
+
+				scoreVal.textContent = score;
+				ticketVal.textContent = tickets;
+				excelScoreVal.textContent = score;
+
+				updateShop();
+				submitScoreToParent(score);
+			} else {
+				playSound('clink');
+				spawnTextFloat("不夠禮券！", canvas.width * 0.5, canvas.height * 0.5, '#ff3333');
+			}
+		}
+
+		function varColor(id) {
+			if (id === 'tart') return '#ff9f00';
+			if (id === 'ruins') return '#00f0ff';
+			if (id === 'kumquat') return '#00ff66';
+			return '#ffd700';
+		}
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'rainbow-toss',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		// Physics check if coin lands perfectly in rainbow bands
+		function checkRainbowLand() {
+			// Compute distance from coin center to board center
+			const dx = coin.x - boardX;
+			const dy = coin.y - boardY;
+			const dist = Math.sqrt(dx * dx + dy * dy);
+
+			// Board is concentric circles. A coin has radius R.
+			// To not touch any black border lines (radius boundaries):
+			// The distance must be strictly inside a band, and at least R away from both boundaries!
+			let landedBand = -1;
+			for (let i = 0; i < boardRadii.length; i++) {
+				const innerR = i === 0 ? 0 : boardRadii[i - 1];
+				const outerR = boardRadii[i];
+
+				// Coin is inside this band?
+				if (dist > innerR && dist < outerR) {
+					// Check perfect land: boundary distances must be > coin.radius
+					const distToInner = dist - innerR;
+					const distToOuter = outerR - dist;
+
+					if (distToInner > coin.radius && distToOuter > coin.radius) {
+						landedBand = i; // Perfect land inside band i!
+					}
+					break;
+				}
+			}
+
+			if (landedBand !== -1) {
+				// Perfect land award tickets!
+				const prizeTickets = landedBand === 0 ? 10 : landedBand <= 2 ? 5 : 2;
+				tickets += prizeTickets;
+				score += prizeTickets * 100;
+
+				playSound('win');
+				spawnTextFloat(`完美！+${prizeTickets} 禮券`, coin.x, coin.y - 30, '#00ff66');
+
+				scoreVal.textContent = score;
+				ticketVal.textContent = tickets;
+				excelScoreVal.textContent = score;
+
+				submitScoreToParent(score);
+				updateShop();
+			} else {
+				// Touched line / "砸界" or off-board
+				if (dist < boardRadii[boardRadii.length - 1] + coin.radius * 2) {
+					spawnTextFloat("砸界！(Touched Line)", coin.x, coin.y - 30, '#ff3333');
+				} else {
+					spawnTextFloat("出界！(Off-Board)", coin.x, coin.y - 30, '#8c89ad');
+				}
+				playSound('clink');
+			}
+		}
+
+		function drawBoard(ctx) {
+			// Draw table background
+			ctx.fillStyle = '#110c1c';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw Macau street market wooden counter board
+			ctx.fillStyle = '#221933';
+			ctx.strokeStyle = '#433460';
+			ctx.lineWidth = 4;
+			ctx.fillRect(50, 40, canvas.width - 100, canvas.height * 0.65);
+			ctx.strokeRect(50, 40, canvas.width - 100, canvas.height * 0.65);
+
+			// Draw concentric rainbow bands
+			ctx.save();
+			// Draw bands from outer to inner to overlap borders cleanly
+			for (let i = boardRadii.length - 1; i >= 0; i--) {
+				ctx.fillStyle = boardColors[i];
+				ctx.beginPath();
+				ctx.arc(boardX, boardY, boardRadii[i], 0, Math.PI * 2);
+				ctx.fill();
+
+				// Thin black border line
+				ctx.strokeStyle = '#050308';
+				ctx.lineWidth = borderLineWidth;
+				ctx.beginPath();
+				ctx.arc(boardX, boardY, boardRadii[i], 0, Math.PI * 2);
+				ctx.stroke();
+			}
+			ctx.restore();
+		}
+
+		function drawDragVector(ctx) {
+			if (!isDragging) return;
+
+			// Draw aiming rubber band / vector line
+			ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+			ctx.lineWidth = 3;
+			ctx.setLineDash([4, 4]);
+
+			const pullX = dragStart.x - dragCurrent.x;
+			const pullY = dragStart.y - dragCurrent.y;
+
+			ctx.beginPath();
+			ctx.moveTo(coin.x, coin.y);
+			ctx.lineTo(coin.x + pullX * 0.8, coin.y + pullY * 0.8);
+			ctx.stroke();
+			ctx.setLineDash([]);
+
+			// Target endpoint dot
+			ctx.fillStyle = 'var(--neon-blue)';
+			ctx.beginPath();
+			ctx.arc(coin.x + pullX * 0.8, coin.y + pullY * 0.8, 5, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		function drawCoin(ctx) {
+			ctx.save();
+			// Shadow offset based on throw z-height
+			const shadowY = coin.y + coin.z * 0.8;
+			ctx.fillStyle = 'rgba(0,0,0,0.45)';
+			ctx.beginPath();
+			ctx.arc(coin.x, shadowY, coin.radius, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Golden coin face
+			const sizeFactor = 1 + (coin.z * 0.003); // simulate 3D scale perspective
+			ctx.fillStyle = 'var(--gold)';
+			ctx.strokeStyle = '#d4af37';
+			ctx.lineWidth = 2.5;
+
+			ctx.beginPath();
+			ctx.arc(coin.x, coin.y, coin.radius * sizeFactor, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+
+			// Center coin detail circle
+			ctx.strokeStyle = '#b8860b';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.arc(coin.x, coin.y, coin.radius * 0.5 * sizeFactor, 0, Math.PI * 2);
+			ctx.stroke();
+
+			ctx.restore();
+		}
+
+		function updateParticles() {
+			for (let i = textFloats.length - 1; i >= 0; i--) {
+				const t = textFloats[i];
+				t.y += t.vy;
+				t.life--;
+				if (t.life <= 0) {
+					textFloats.splice(i, 1);
+				}
+			}
+		}
+
+		function drawParticles(ctx) {
+			ctx.textAlign = 'center';
+			textFloats.forEach(t => {
+				ctx.save();
+				ctx.globalAlpha = Math.min(1.0, t.life / 15);
+				ctx.fillStyle = t.color;
+				ctx.font = 'bold 15px sans-serif';
+				ctx.shadowColor = '#000';
+				ctx.shadowBlur = 3;
+				ctx.fillText(t.text, t.x, t.y);
+				ctx.restore();
+			});
+		}
+
+		function gameLoop() {
+			updateParticles();
+
+			drawBoard(ctx);
+			drawDragVector(ctx);
+			drawCoin(ctx);
+			drawParticles(ctx);
+
+			// Physics updates
+			if (!isCamouflage && coin.isFlying) {
+				coin.x += coin.vx;
+				coin.y += coin.vy;
+
+				// Gravity / Parabolic bounce simulation
+				coin.vy += 0.3; // Gravity pulling coin down the perspective table
+				coin.z += coin.vz;
+				coin.vz -= 0.6; // Vertical parabola speed pull
+
+				if (coin.z <= 0) {
+					// Hits the table board!
+					coin.z = 0;
+					coin.bounces++;
+					playSound('bounce');
+
+					if (coin.bounces < 3) {
+						// Bounce back up slightly
+						coin.vz = Math.max(0.5, 5 - coin.bounces * 2);
+						coin.vx *= 0.55;
+						coin.vy *= 0.55;
+					} else {
+						// Finished bouncing, calculate outcome
+						coin.isFlying = false;
+						checkRainbowLand();
+
+						// Reset coin to starting shooter position after short delay
+						setTimeout(() => {
+							coin.x = canvas.width * 0.5;
+							coin.y = canvas.height * 0.88;
+							coin.vx = 0;
+							coin.vy = 0;
+							coin.vz = 0;
+							coin.bounces = 0;
+						}, 1200);
+					}
+				}
+			}
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Drag & Throw mechanics
+		canvas.addEventListener('mousedown', (e) => {
+			if (coin.isFlying || isCamouflage) return;
+			const rect = canvas.getBoundingClientRect();
+			const mx = e.clientX - rect.left;
+			const my = e.clientY - rect.top;
+
+			// Can only drag starting near coin position
+			const dx = mx - coin.x;
+			const dy = my - coin.y;
+			if (Math.sqrt(dx*dx + dy*dy) < 50) {
+				isDragging = true;
+				dragStart.x = mx;
+				dragStart.y = my;
+				dragCurrent.x = mx;
+				dragCurrent.y = my;
+			}
+		});
+
+		canvas.addEventListener('mousemove', (e) => {
+			if (!isDragging) return;
+			const rect = canvas.getBoundingClientRect();
+			dragCurrent.x = e.clientX - rect.left;
+			dragCurrent.y = e.clientY - rect.top;
+		});
+
+		canvas.addEventListener('mouseup', (e) => {
+			if (!isDragging) return;
+			isDragging = false;
+
+			const pullX = dragStart.x - dragCurrent.x;
+			const pullY = dragStart.y - dragCurrent.y;
+
+			// Launch physics vector
+			coin.isFlying = true;
+			coin.vx = pullX * 0.08;
+			coin.vy = pullY * 0.08;
+			coin.vz = Math.sqrt(pullX*pullX + pullY*pullY) * 0.06;
+			coin.bounces = 0;
+			playSound('clink');
+		});
+
+		// Touch events for mobile compatibility
+		canvas.addEventListener('touchstart', (e) => {
+			if (coin.isFlying || isCamouflage) return;
+			const rect = canvas.getBoundingClientRect();
+			const t = e.touches[0];
+			const mx = t.clientX - rect.left;
+			const my = t.clientY - rect.top;
+
+			const dx = mx - coin.x;
+			const dy = my - coin.y;
+			if (Math.sqrt(dx*dx + dy*dy) < 60) {
+				isDragging = true;
+				dragStart.x = mx;
+				dragStart.y = my;
+				dragCurrent.x = mx;
+				dragCurrent.y = my;
+			}
+		});
+
+		canvas.addEventListener('touchmove', (e) => {
+			if (!isDragging) return;
+			const rect = canvas.getBoundingClientRect();
+			const t = e.touches[0];
+			dragCurrent.x = t.clientX - rect.left;
+			dragCurrent.y = t.clientY - rect.top;
+		});
+
+		canvas.addEventListener('touchend', (e) => {
+			if (!isDragging) return;
+			isDragging = false;
+
+			const pullX = dragStart.x - dragCurrent.x;
+			const pullY = dragStart.y - dragCurrent.y;
+
+			coin.isFlying = true;
+			coin.vx = pullX * 0.08;
+			coin.vy = pullY * 0.08;
+			coin.vz = Math.sqrt(pullX*pullX + pullY*pullY) * 0.06;
+			coin.bounces = 0;
+			playSound('clink');
+		});
+
+		// Modal toggle
+		openShopBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			shopModal.style.display = 'flex';
+			setTimeout(() => shopModal.style.opacity = 1, 50);
+		});
+
+		closeShopBtn.addEventListener('click', () => {
+			shopModal.style.opacity = 0;
+			setTimeout(() => shopModal.style.display = 'none', 200);
+		});
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Run
+		updateShop();
+		gameLoop();
+	</script>
+</body>
+</html>

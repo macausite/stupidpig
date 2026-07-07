@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>StupidPig Corp - consolidated Q2 Analytics Dashboard</title>
+  <meta name="description" content="StupidPig Corp Financial Analytics and forecasting sheet.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&family=Courier+Prime&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  
+  <!-- MAIN PROFESSIONAL OFFICE PORTAL -->
+  <div id="corporate-desktop">
+    
+    <!-- TOP BAR (Disguised Taskbar) -->
+    <header class="corp-header">
+      <div class="header-left">
+        <div class="logo">📊</div>
+        <div class="title-col">
+          <strong>StupidPig Corp Consolidated Analytics</strong>
+          <span class="sub">v4.1.2 - Live Production Cluster</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="sound-toggle" class="header-btn">🔊 Sound: ON</button>
+        <button id="boss-key-btn" class="header-btn alarm-btn">🔒 Boss Mode (Space)</button>
+        <div class="profile-chip">
+          <div class="profile-pic">🐷</div>
+          <div class="profile-info">
+            <strong>Employee #9527</strong>
+            <span>Senior Slacker</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT LAYOUT -->
+    <div id="dashboard-body">
+      
+      <!-- LEFT PANEL: STATS & PROGRESS -->
+      <aside class="panel left-panel">
+        <div class="panel-card hud-card">
+          <h3 class="card-title">📈 Recalculated Score</h3>
+          <div class="score-display">
+            <span class="label">Current Score</span>
+            <span id="score-val" class="value">0</span>
+          </div>
+          <div class="score-display high-score-box">
+            <span class="label">Personal Best</span>
+            <span id="highscore-val" class="value">0</span>
+          </div>
+        </div>
+
+        <div class="panel-card next-preview-card">
+          <h3 class="card-title">🔮 Next Spawn Object</h3>
+          <div class="preview-container">
+            <canvas id="preview-canvas" width="100" height="100"></canvas>
+            <span id="next-label">燒賣 (Siumai)</span>
+          </div>
+        </div>
+
+        <div class="panel-card evolution-card">
+          <h3 class="card-title">🧬 Evolution Hierarchy</h3>
+          <div class="evo-chain">
+            <div class="evo-item" title="Tier 1">🥟 <span class="evo-name">燒賣</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item" title="Tier 2">🥧 <span class="evo-name">蛋撻</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item" title="Tier 3">🍞 <span class="evo-name">菠蘿包</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item" title="Tier 4">😋 <span class="evo-name">吃貨豬</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item" title="Tier 5">🐷 <span class="evo-name">傻豬豬</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item" title="Tier 6">😱 <span class="evo-name">驚嚇豬</span></div>
+            <div class="evo-arrow">↓</div>
+            <div class="evo-item ultimate" title="Tier 7">👑 <span class="evo-name">終極大笨豬</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER PANEL: MAIN PHYSICS BOARD -->
+      <main class="panel center-panel">
+        <div class="game-container-frame">
+          <div class="game-header-bar">
+            <span class="console-dot red"></span>
+            <span class="console-dot yellow"></span>
+            <span class="console-dot green"></span>
+            <span class="game-title">Active Drop Chamber (Press Space to Lock)</span>
+          </div>
+          <div class="mobile-hud">
+            <div class="mobile-hud-item">得分: <span id="mobile-score-val">0</span></div>
+            <div class="mobile-hud-item">最高: <span id="mobile-highscore-val">0</span></div>
+            <div class="mobile-hud-item">下一個: <span id="mobile-next-emoji">🥟</span></div>
+          </div>
+          <div class="canvas-wrapper">
+            <!-- Game Canvas -->
+            <canvas id="game-canvas" width="420" height="600"></canvas>
+            
+            <!-- Splat Warning Zone Indicator -->
+            <div id="danger-line"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: CHATTER & INSTRUCTIONS -->
+      <aside class="panel right-panel">
+        <div class="panel-card chat-card">
+          <h3 class="card-title">💬 Corporate Slack Chat</h3>
+          <div class="chat-feed" id="chat-feed-box">
+            <!-- Simulated office chat messages -->
+          </div>
+        </div>
+
+        <div class="panel-card instructions-card">
+          <h3 class="card-title">📋 Consolidated Rules</h3>
+          <ul class="rule-list">
+            <li><strong>滑鼠/左右滑動:</strong> 調整發射角度與位置</li>
+            <li><strong>點擊/釋放:</strong> 往下投放物品</li>
+            <li><strong>物理合成:</strong> 相同物品相撞會自動升級成更大嘅物品，分數翻倍</li>
+            <li><strong>爆滿警告:</strong> 如果堆疊超過頂部紅色警戒線，持續 3 秒就會爆倉遊戲結束！</li>
+            <li><strong>緊急避難:</strong> 撳 <strong>Spacebar (空白鍵)</strong> 即時切換成 Excel 表格掩護！</li>
+          </ul>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- START GAME OVERLAY -->
+    <div id="start-overlay" class="dialog-overlay">
+      <div class="modal-box">
+        <div class="modal-header">📂 Open File: Consolidate_Q2_Report_Final.xlsx</div>
+        <div class="modal-body">
+          <h2>📊 合成大傻豬 (Merge Stupid Pig)</h2>
+          <p>上班時間最治癒嘅合成物理遊戲！將點心同傻豬合體，最後拼出<strong>「終極大笨豬」</strong>！</p>
+          <div class="instruction-box">
+            <strong>⌨️ 辦公室保命指南：</strong>
+            <p>隨時留意老細動態。一旦有人路過，即刻撳 <strong>Spacebar (空白鍵)</strong> 或點擊 <strong>🔒 Boss Mode</strong>，畫面會 100% 變為 Excel 表格，遊戲會自動暫停！</p>
+          </div>
+          <button id="start-game-btn" class="modal-btn">載入工作區 (Open Sheet)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="gameover-overlay" class="dialog-overlay hidden">
+      <div class="modal-box error-modal">
+        <div class="modal-header red-header">⚠️ StupidPig Corp - System Overflow Warning</div>
+        <div class="modal-body">
+          <h2 class="red-text">💥 爆倉結束！(Container Overflow)</h2>
+          <p>傻豬疊得太高，塞爆咗辦公室！</p>
+          <div class="gameover-stats">
+            <div class="stat-line"><span>最終得分:</span> <strong id="final-score" class="font-code">0</strong></div>
+            <div class="stat-line"><span>最高紀錄:</span> <strong id="final-highscore" class="font-code">0</strong></div>
+            <div class="stat-line"><span>傻豬等級:</span> <strong id="evaluation-rank" class="rank-badge">大師級</strong></div>
+          </div>
+          <button id="restart-game-btn" class="modal-btn red-btn">重整報表 (Restart)</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EXCEL CAMOUFLAGE SCREEN (BOSS KEY SHIELD) -->
+  <div id="camouflage-overlay" class="hidden">
+    <div class="camouflage-container">
+      <header class="excel-header-cam">
+        <div class="excel-logo-cam">📊</div>
+        <div class="excel-file-info-cam">
+          <strong>StupidPig_Q2_Consolidated_Financial_Forecasting_Report.xlsx</strong>
+          <span>✓ Saved to OneDrive (Corporate Account)</span>
+        </div>
+      </header>
+      <div class="excel-sheet-grid">
+        <table class="fake-excel-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>E</th>
+              <th>F</th>
+              <th>G</th>
+              <th>H</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-num">1</td>
+              <td class="excel-head">Financial Period</td>
+              <td class="excel-head">Revenue (USD)</td>
+              <td class="excel-head">COGS</td>
+              <td class="excel-head">OPEX</td>
+              <td class="excel-head">Net Margin</td>
+              <td class="excel-head">Tax Allocation</td>
+              <td class="excel-head">Variance %</td>
+              <td class="excel-head">Status</td>
+            </tr>
+            <tr>
+              <td class="row-num">2</td>
+              <td>Q1 2026</td>
+              <td>$14,560,000.00</td>
+              <td>$8,230,000.00</td>
+              <td>$3,120,000.00</td>
+              <td>$3,210,000.00</td>
+              <td>$642,000.00</td>
+              <td class="text-green">+4.2%</td>
+              <td>Approved</td>
+            </tr>
+            <tr>
+              <td class="row-num">3</td>
+              <td>Q2 2026 (Consolidated)</td>
+              <td>$18,920,000.00</td>
+              <td>$9,450,000.00</td>
+              <td>$3,850,000.00</td>
+              <td>$5,620,000.00</td>
+              <td>$1,124,000.00</td>
+              <td class="text-green">+12.8%</td>
+              <td class="text-bold text-blue">In Progress</td>
+            </tr>
+            <tr>
+              <td class="row-num">4</td>
+              <td>Q3 2026 (Forecasted)</td>
+              <td>$22,100,000.00</td>
+              <td>$11,200,000.00</td>
+              <td>$4,100,000.00</td>
+              <td>$6,800,000.00</td>
+              <td>$1,360,000.00</td>
+              <td class="text-green">+20.5%</td>
+              <td>Forecasted</td>
+            </tr>
+            <tr>
+              <td class="row-num">5</td>
+              <td>Q4 2026 (Forecasted)</td>
+              <td>$26,450,000.00</td>
+              <td>$13,500,000.00</td>
+              <td>$4,800,000.00</td>
+              <td>$8,150,000.00</td>
+              <td>$1,630,000.00</td>
+              <td class="text-green">+28.3%</td>
+              <td>Forecasted</td>
+            </tr>
+            <tr>
+              <td class="row-num">6</td>
+              <td class="text-bold">Total YTD</td>
+              <td class="text-bold">$82,030,000.00</td>
+              <td class="text-bold">$42,380,000.00</td>
+              <td class="text-bold">$15,870,000.00</td>
+              <td class="text-bold" style="background-color: #e1f5fe;">$23,780,000.00</td>
+              <td class="text-bold">$4,756,000.00</td>
+              <td class="text-green text-bold">+15.8%</td>
+              <td>Active</td>
+            </tr>
+            <tr>
+              <td class="row-num">7</td>
+              <td colspan="8" style="background-color: #faf9f8; height: 16px;"></td>
+            </tr>
+            <tr>
+              <td class="row-num">8</td>
+              <td class="text-bold">VBA Calculation Script:</td>
+              <td colspan="7" class="text-blue">=SUMPRODUCT(B2:B5, C2:C5) / AVERAGE(D2:D5)</td>
+            </tr>
+            <tr>
+              <td class="row-num">9</td>
+              <td>Compilation Buffer:</td>
+              <td colspan="7" class="font-code text-muted">BUILD SUCCESS: Compiled 12 data clusters in 14ms (active gateway #104)</td>
+            </tr>
+            <!-- More rows for spreadsheet camouflage -->
+            <tr><td class="row-num">10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="row-num">11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="row-num">12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="row-num">13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="row-num">14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td class="row-num">15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="excel-footer-cam">
+        <div class="excel-tabs-cam">
+          <span class="active-tab-cam">Sheet1 - Consolidated Revenue</span>
+          <span>Sheet2 - Variance Metrics</span>
+          <span>Sheet3 - Forecasting Data</span>
+        </div>
+        <div class="excel-status-cam">
+          <span>Click anywhere to resume game...</span>
+          <span>100% Zoom</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

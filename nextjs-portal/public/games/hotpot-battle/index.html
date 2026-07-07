@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>地獄黑仔王: 打邊爐搶食戰 (Hot Pot Chopstick Battle)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-pink: #ff2a85;
+			--neon-blue: #00f0ff;
+			--gold: #ffd700;
+			--bg-dark: #07050a;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(255, 42, 133, 0.4);
+			border-radius: 12px;
+			box-shadow: 0 0 35px rgba(255, 42, 133, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+			cursor: none; /* Hide cursor to show chopsticks */
+		}
+
+		/* HUD stats overlay */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(255, 42, 133, 0.35);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Float alerts */
+		.control-hint {
+			position: absolute;
+			bottom: 15px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: rgba(11, 9, 20, 0.8);
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			padding: 6px 16px;
+			border-radius: 20px;
+			color: #aaa;
+			font-size: 0.75rem;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		/* End overlay */
+		.game-over-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(8, 6, 12, 0.9);
+			display: none;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			color: #fff;
+			z-index: 100;
+			text-align: center;
+		}
+
+		.game-btn {
+			background: linear-gradient(180deg, #ff2a85 0%, #a3004d 100%);
+			color: #fff;
+			border: none;
+			padding: 10px 24px;
+			border-radius: 8px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 12px rgba(255, 42, 133, 0.3);
+			margin-top: 12px;
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD Stats -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🥩 打邊爐搶食戰</div>
+				<div style="margin-top: 4px;">飽食度: <span class="score-label" id="score-val">0</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div>剩餘時間: <span class="score-label" id="time-val" style="color: var(--neon-pink);">60s</span></div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<div class="control-hint">點擊滑鼠/輕觸屏幕搶食 (Click/Tap to grab)</div>
+
+		<!-- Game Over screen -->
+		<div class="game-over-overlay" id="end-overlay">
+			<h2 style="font-size: 2.2rem; color: var(--gold); margin-bottom: 10px;">🍲 搶食宴會結束！</h2>
+			<p style="font-size: 1.1rem; color: #aaa; margin-bottom: 15px;" id="end-desc">總飽食度: 0 點</p>
+			<button class="game-btn" id="restart-btn">再吃一鍋 (Eat Again)</button>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - HotPot_Dining_Calories_Log.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>熱量分析</span>
+				<span>飲食日誌</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (食物品項)</th>
+							<th>B (烹煮耗時)</th>
+							<th>C (熱量 kcal)</th>
+							<th>D (累計飽食得分)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">家庭聚餐打邊爐熱量核算</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>手切肥牛</td>
+							<td>3s</td>
+							<td>250</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>手打牛丸</td>
+							<td>5s</td>
+							<td>180</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>香甜粟米</td>
+							<td>6s</td>
+							<td>90</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Audio Synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'bubble') {
+					// Soft bubbling water sound
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(150 + Math.random() * 80, now);
+					osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.06, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.15);
+				} else if (type === 'grab') {
+					// Chopstick snap/clack
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(400, now);
+					osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.05);
+				} else if (type === 'perfect') {
+					// Ding chime
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(880, now);
+					osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.18, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.3);
+				} else if (type === 'raw') {
+					// Buzz
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(120, now);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.2);
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		// Game State
+		let score = 0;
+		let timeLeft = 60;
+		let isPlaying = true;
+		let isCamouflage = false;
+
+		let mouseX = 400;
+		let mouseY = 300;
+
+		let foodItems = [];
+		let particles = [];
+		let textFloats = [];
+
+		// Opponent AI chopsticks list
+		let aiChopsticks = [];
+
+		const FOOD_TYPES = [
+			{ name: '肥牛', emoji: '🥩', cookTime: 180, points: 150 },
+			{ name: '魚蛋', emoji: '🍡', cookTime: 300, points: 100 },
+			{ name: '冬菇', emoji: '🍄', cookTime: 480, points: 200 }
+		];
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const scoreVal = document.getElementById('score-val');
+		const timeVal = document.getElementById('time-val');
+		const endOverlay = document.getElementById('end-overlay');
+		const endDesc = document.getElementById('end-desc');
+		const restartBtn = document.getElementById('restart-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function spawnFood() {
+			if (foodItems.length < 5) {
+				const type = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
+				// Spawn inside hotpot circle bounds
+				const potRadius = 150;
+				const angle = Math.random() * Math.PI * 2;
+				const dist = Math.random() * (potRadius - 30);
+
+				foodItems.push({
+					name: type.name,
+					emoji: type.emoji,
+					maxTime: type.cookTime,
+					points: type.points,
+					cookProgress: 0,
+					x: canvas.width * 0.5 + Math.cos(angle) * dist,
+					y: canvas.height * 0.5 + Math.sin(angle) * dist,
+					vx: (Math.random() - 0.5) * 0.8,
+					vy: (Math.random() - 0.5) * 0.8,
+					radius: 18
+				});
+			}
+		}
+
+		function spawnTextFloat(text, x, y, color = '#fff') {
+			textFloats.push({
+				text: text,
+				x: x,
+				y: y,
+				vy: -1.2,
+				alpha: 1.0,
+				life: 60,
+				color: color
+			});
+		}
+
+		function grabFood() {
+			if (!isPlaying || isCamouflage) return;
+			playSound('grab');
+
+			// Find closest food to cursor
+			let grabbedIndex = -1;
+			let minDist = 40;
+
+			foodItems.forEach((f, idx) => {
+				const dx = mouseX - f.x;
+				const dy = mouseY - f.y;
+				const dist = Math.sqrt(dx*dx + dy*dy);
+				if (dist < minDist) {
+					minDist = dist;
+					grabbedIndex = idx;
+				}
+			});
+
+			if (grabbedIndex !== -1) {
+				const f = foodItems[grabbedIndex];
+				const pct = f.cookProgress / f.maxTime;
+
+				if (pct >= 0.85 && pct <= 1.15) {
+					// Perfectly cooked!
+					score += f.points;
+					playSound('perfect');
+					spawnTextFloat(`正！+${f.points}`, f.x, f.y - 20, '#00ff66');
+				} else if (pct < 0.85) {
+					// Raw
+					score = Math.max(0, score - 50);
+					playSound('raw');
+					spawnTextFloat("生㗎！-50", f.x, f.y - 20, '#ff3333');
+				} else {
+					// Overcooked/burnt
+					score = Math.max(0, score - 20);
+					playSound('raw');
+					spawnTextFloat("煮爛咗！-20", f.x, f.y - 20, '#8c89ad');
+				}
+
+				scoreVal.textContent = score;
+				excelScoreVal.textContent = score;
+				submitScoreToParent(score);
+
+				foodItems.splice(grabbedIndex, 1);
+			}
+		}
+
+		function triggerOpponentAI() {
+			// CPU periodically grabs a cooked food item
+			if (foodItems.length === 0 || Math.random() > 0.08) return;
+
+			// Find a perfectly cooked food item
+			const targets = foodItems.filter(f => {
+				const pct = f.cookProgress / f.maxTime;
+				return pct >= 0.9 && pct <= 1.1;
+			});
+
+			if (targets.length > 0) {
+				const target = targets[0];
+				// Spawn opponent chopsticks animation
+				aiChopsticks.push({
+					targetX: target.x,
+					targetY: target.y,
+					x: target.x + (Math.random() > 0.5 ? 200 : -200),
+					y: target.y - 200,
+					progress: 0,
+					itemRef: target
+				});
+			}
+		}
+
+		function updateAIChopsticks() {
+			for (let i = aiChopsticks.length - 1; i >= 0; i--) {
+				const chop = aiChopsticks[i];
+				chop.progress += 0.05;
+
+				// Move towards target
+				if (chop.progress < 0.5) {
+					chop.x += (chop.targetX - chop.x) * 0.15;
+					chop.y += (chop.targetY - chop.y) * 0.15;
+				} else if (chop.progress >= 0.5 && chop.progress < 0.55) {
+					// Snatch item
+					const idx = foodItems.indexOf(chop.itemRef);
+					if (idx !== -1) {
+						foodItems.splice(idx, 1);
+						playSound('grab');
+						spawnTextFloat("被搶走！(Stolen!)", chop.targetX, chop.targetY - 20, '#ff3333');
+					}
+				} else {
+					// Retract
+					chop.y -= 15;
+					chop.x += 5;
+				}
+
+				if (chop.progress >= 1.0) {
+					aiChopsticks.splice(i, 1);
+				}
+			}
+		}
+
+		function drawAIChopsticks(ctx) {
+			aiChopsticks.forEach(chop => {
+				ctx.save();
+				ctx.strokeStyle = '#b32424'; // Red CPU chopsticks
+				ctx.lineWidth = 5;
+
+				// Draw pair of chopsticks
+				ctx.beginPath();
+				ctx.moveTo(chop.x - 4, chop.y - 120);
+				ctx.lineTo(chop.x, chop.y);
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(chop.x + 8, chop.y - 120);
+				ctx.lineTo(chop.x, chop.y);
+				ctx.stroke();
+
+				ctx.restore();
+			});
+		}
+
+		function drawHotPot(ctx) {
+			// Wooden round table
+			ctx.fillStyle = '#170f0f';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Altar metal circle ring for pot
+			const potX = canvas.width * 0.5;
+			const potY = canvas.height * 0.5;
+			const potRadius = 160;
+
+			ctx.fillStyle = '#3a0c0c';
+			ctx.strokeStyle = '#c62828';
+			ctx.lineWidth = 8;
+			ctx.beginPath();
+			ctx.arc(potX, potY, potRadius, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+
+			// Split divider (Yin Yang style)
+			ctx.strokeStyle = '#5a1212';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(potX - potRadius, potY);
+			ctx.bezierCurveTo(potX - 60, potY - 60, potX + 60, potY + 60, potX + potRadius, potY);
+			ctx.stroke();
+
+			// Bubbling particles inside broth
+			if (Math.random() < 0.2) {
+				playSound('bubble');
+			}
+
+			// Draw steam/bubble circles
+			ctx.fillStyle = 'rgba(255, 87, 34, 0.25)';
+			for (let i = 0; i < 6; i++) {
+				const angle = Math.random() * Math.PI * 2;
+				const dist = Math.random() * (potRadius - 20);
+				ctx.beginPath();
+				ctx.arc(potX + Math.cos(angle) * dist, potY + Math.sin(angle) * dist, 4 + Math.random() * 8, 0, Math.PI * 2);
+				ctx.fill();
+			}
+		}
+
+		function drawFood(ctx) {
+			foodItems.forEach(f => {
+				// Heat progression color ring
+				const pct = f.cookProgress / f.maxTime;
+				let progressColor = '#ff3333'; // Raw red
+				if (pct >= 0.85 && pct <= 1.15) {
+					progressColor = '#00ff66'; // Cooked green
+				} else if (pct > 1.15) {
+					progressColor = '#505050'; // Overcooked grey
+				}
+
+				ctx.save();
+				// Progress outer ring
+				ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+				ctx.lineWidth = 4;
+				ctx.beginPath();
+				ctx.arc(f.x, f.y, f.radius + 6, 0, Math.PI * 2);
+				ctx.stroke();
+
+				// Cooked filled slice arc
+				ctx.strokeStyle = progressColor;
+				ctx.beginPath();
+				ctx.arc(f.x, f.y, f.radius + 6, -Math.PI * 0.5, -Math.PI * 0.5 + Math.min(1.0, pct) * Math.PI * 2);
+				ctx.stroke();
+
+				// Emoji shape
+				ctx.font = '24px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText(f.emoji, f.x, f.y + 8);
+				ctx.restore();
+			});
+		}
+
+		function drawPlayerChopsticks(ctx) {
+			ctx.save();
+			// User chopsticks (beige bamboo look)
+			ctx.strokeStyle = '#eedcb3';
+			ctx.lineWidth = 5;
+
+			// Draw a pair of chopsticks aiming at mouseX, mouseY
+			ctx.beginPath();
+			ctx.moveTo(mouseX - 5, mouseY - 140);
+			ctx.lineTo(mouseX, mouseY);
+			ctx.stroke();
+
+			ctx.beginPath();
+			ctx.moveTo(mouseX + 12, mouseY - 140);
+			ctx.lineTo(mouseX, mouseY);
+			ctx.stroke();
+
+			ctx.restore();
+		}
+
+		function updateParticles() {
+			for (let i = textFloats.length - 1; i >= 0; i--) {
+				const t = textFloats[i];
+				t.y += t.vy;
+				t.life--;
+				if (t.life <= 0) {
+					textFloats.splice(i, 1);
+				}
+			}
+		}
+
+		function drawParticles(ctx) {
+			ctx.textAlign = 'center';
+			textFloats.forEach(t => {
+				ctx.save();
+				ctx.globalAlpha = Math.min(1.0, t.life / 20);
+				ctx.fillStyle = t.color;
+				ctx.font = 'bold 15px sans-serif';
+				ctx.fillText(t.text, t.x, t.y);
+				ctx.restore();
+			});
+		}
+
+		function gameLoop() {
+			if (isPlaying && !isCamouflage) {
+				spawnFood();
+				triggerOpponentAI();
+				updateAIChopsticks();
+
+				// Update cook timers
+				foodItems.forEach(f => {
+					f.cookProgress++;
+					// Drift float
+					f.x += f.vx;
+					f.y += f.vy;
+
+					// Stay inside pot circle bounds
+					const potX = canvas.width * 0.5;
+					const potY = canvas.height * 0.5;
+					const dx = f.x - potX;
+					const dy = f.y - potY;
+					const dist = Math.sqrt(dx*dx + dy*dy);
+					if (dist > 135) {
+						f.vx *= -1;
+						f.vy *= -1;
+						f.x += f.vx * 2;
+						f.y += f.vy * 2;
+					}
+				});
+			}
+
+			updateParticles();
+
+			drawHotPot(ctx);
+			drawFood(ctx);
+			drawAIChopsticks(ctx);
+			drawPlayerChopsticks(ctx);
+			drawParticles(ctx);
+
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Cursor tracker
+		canvas.addEventListener('mousemove', (e) => {
+			const rect = canvas.getBoundingClientRect();
+			mouseX = e.clientX - rect.left;
+			mouseY = e.clientY - rect.top;
+		});
+
+		canvas.addEventListener('mousedown', (e) => {
+			e.stopPropagation();
+			grabFood();
+		});
+
+		// Mobile compatibility touch tracking
+		canvas.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			const rect = canvas.getBoundingClientRect();
+			const t = e.touches[0];
+			mouseX = t.clientX - rect.left;
+			mouseY = t.clientY - rect.top;
+			grabFood();
+		});
+
+		canvas.addEventListener('touchmove', (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const t = e.touches[0];
+			mouseX = t.clientX - rect.left;
+			mouseY = t.clientY - rect.top;
+		});
+
+		// Timer loop
+		const interval = setInterval(() => {
+			if (isPlaying && !isCamouflage) {
+				timeLeft--;
+				timeVal.textContent = `${timeLeft}s`;
+
+				if (timeLeft <= 0) {
+					isPlaying = false;
+					clearInterval(interval);
+					endOverlay.style.display = 'flex';
+					endDesc.textContent = `總飽食度: ${score} 點`;
+					submitScoreToParent(score);
+				}
+			}
+		}, 1000);
+
+		restartBtn.addEventListener('click', () => {
+			location.reload();
+		});
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'hotpot-battle',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleCamouflage();
+			}
+		});
+
+		// Start
+		gameLoop();
+	</script>
+</body>
+</html>

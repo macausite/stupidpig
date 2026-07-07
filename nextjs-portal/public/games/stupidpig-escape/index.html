@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>傻豬辦公室大逃亡 (StupidPig Office Escape)</title>
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: #0c0b16;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			user-select: none;
+			-webkit-user-select: none;
+		}
+		#gameContainer {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+		canvas {
+			display: block;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+			background-color: #1a192c;
+			max-width: 100%;
+			max-height: 100%;
+		}
+		/* Camouflage Screen Overlay */
+		#camouflageOverlay {
+			display: none;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #ffffff;
+			color: #000000;
+			z-index: 10;
+			box-sizing: border-box;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 12px;
+		}
+		.excel-toolbar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 12px;
+			font-weight: bold;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+		.excel-grid {
+			width: 100%;
+			border-collapse: collapse;
+		}
+		.excel-grid th, .excel-grid td {
+			border: 1px solid #d0d0d0;
+			padding: 6px 8px;
+			text-align: left;
+		}
+		.excel-grid th {
+			background-color: #f3f3f3;
+			font-weight: normal;
+			color: #555555;
+		}
+		.excel-row-num {
+			background-color: #f3f3f3;
+			color: #555555;
+			text-align: center;
+			width: 30px;
+		}
+		/* Flashing Warning Message */
+		#alertBox {
+			display: none;
+			position: absolute;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background-color: rgba(255, 59, 48, 0.95);
+			color: white;
+			padding: 12px 24px;
+			border-radius: 30px;
+			font-weight: bold;
+			font-size: 1.1rem;
+			box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
+			z-index: 5;
+			animation: flash 0.6s infinite alternate;
+			pointer-events: none;
+		}
+		@keyframes flash {
+			from { opacity: 0.4; transform: translateX(-50%) scale(0.95); }
+			to { opacity: 1.0; transform: translateX(-50%) scale(1.05); }
+		}
+	</style>
+</head>
+<body>
+	<div id="gameContainer">
+		<div id="alertBox">⚠️ 老闆行緊過黎！撳 [空格鍵] 切換 EXCEL 扮工！</div>
+		<canvas id="gameCanvas" width="800" height="450"></canvas>
+
+		<!-- Interactive Excel Camouflage Sheet -->
+		<div id="camouflageOverlay">
+			<div class="excel-toolbar">
+				<span>Microsoft Excel - StupidPig_Quarterly_Report_2026.xlsx</span>
+				<span style="font-size: 10px; opacity: 0.8;">[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div style="background-color: #f3f3f3; padding: 6px 12px; border-bottom: 1px solid #d0d0d0; display: flex; gap: 15px; color: #333;">
+				<span>檔案</span><span>常用</span><span>插入</span><span>版面配置</span><span>公式</span><span>資料</span>
+			</div>
+			<div style="padding: 6px 12px; background-color: #ffffff; border-bottom: 1px solid #d0d0d0; display: flex; gap: 8px; align-items: center;">
+				<span style="font-weight: bold; color: #107c41;">fx</span>
+				<input type="text" value="=SUM(B2:B8)" style="border: 1px solid #c0c0c0; padding: 2px 6px; width: 300px; font-size: 11px;" readonly />
+			</div>
+			<table class="excel-grid">
+				<thead>
+					<tr>
+						<th class="excel-row-num"></th>
+						<th>A (指標項目)</th>
+						<th>B (本季進度)</th>
+						<th>C (期望績效)</th>
+						<th>D (摸魚狀態)</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="excel-row-num">1</td>
+						<td style="font-weight: bold;">傻豬辦公室績效匯總</td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td class="excel-row-num">2</td>
+						<td>菠蘿包消耗量 (個)</td>
+						<td id="cell-pineapple">24</td>
+						<td>50</td>
+						<td style="color: #107c41; font-weight: bold;">超額完成</td>
+					</tr>
+					<tr>
+						<td class="excel-row-num">3</td>
+						<td>蛋撻消耗量 (個)</td>
+						<td id="cell-eggtart">18</td>
+						<td>30</td>
+						<td style="color: #ff9500; font-weight: bold;">待加強</td>
+					</tr>
+					<tr>
+						<td class="excel-row-num">4</td>
+						<td>摸魚總時數 (小時)</td>
+						<td id="cell-slacking">342</td>
+						<td>100</td>
+						<td style="color: #107c41; font-weight: bold;">摸魚大師</td>
+					</tr>
+					<tr>
+						<td class="excel-row-num">5</td>
+						<td>老闆視察避開率</td>
+						<td id="cell-evasion">100%</td>
+						<td>100%</td>
+						<td style="color: #107c41; font-weight: bold;">無懈可擊</td>
+					</tr>
+					<tr>
+						<td class="excel-row-num">6</td>
+						<td>當前摸魚得分</td>
+						<td id="cell-score" style="font-weight: bold; color: #007aff;">0</td>
+						<td>99999</td>
+						<td style="color: #ff3b30; font-weight: bold;">進行中</td>
+					</tr>
+				</tbody>
+			</table>
+			<div style="padding: 20px; text-align: center; color: #666; font-size: 14px;">
+				<h3 style="color: #107c41; margin-bottom: 8px;">📊 辦公室即時安全報表</h3>
+				<p>老闆正在巡視中... 請保持 Excel 視窗開啟，直至老闆離開！</p>
+				<div style="width: 200px; height: 10px; background-color: #eee; border-radius: 5px; margin: 10px auto; overflow: hidden; position: relative;">
+					<div id="bossProgressBar" style="width: 0%; height: 100%; background-color: #107c41; transition: width 0.1s linear;"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Setup telemetric bridge inside iframe
+		const gameId = 'stupidpig-escape';
+		function submitScore(score) {
+			window.parent.postMessage({
+				type: 'STUPIDPIG_SUBMIT_SCORE',
+				gameId: gameId,
+				score: score
+			}, '*');
+		}
+
+		window.addEventListener('load', () => {
+			window.parent.postMessage({
+				type: 'STUPIDPIG_GAME_LOADED',
+				gameId: gameId
+			}, '*');
+		});
+
+		// Listen for restart signals from Next.js portal
+		window.addEventListener('message', (event) => {
+			if (event.data && event.data.type === 'STUPIDPIG_RESTART_GAME') {
+				resetGame();
+			}
+		});
+
+		// Web Audio API Synthesizer for retro SFX
+		const AudioCtx = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function playSound(type) {
+			try {
+				if (!audioCtx) audioCtx = new AudioCtx();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+
+				const osc = audioCtx.createOscillator();
+				const gain = audioCtx.createGain();
+				osc.connect(gain);
+				gain.connect(audioCtx.destination);
+
+				const now = audioCtx.currentTime;
+
+				if (type === 'jump') {
+					osc.type = 'square';
+					osc.frequency.setValueAtTime(150, now);
+					osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+					gain.gain.setValueAtTime(0.1, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+					osc.start(now);
+					osc.stop(now + 0.15);
+				} else if (type === 'dimsum') {
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(523.25, now); // C5
+					osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+					gain.gain.setValueAtTime(0.15, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+					osc.start(now);
+					osc.stop(now + 0.2);
+				} else if (type === 'alert') {
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(800, now);
+					osc.frequency.linearRampToValueAtTime(400, now + 0.3);
+					gain.gain.setValueAtTime(0.08, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+					osc.start(now);
+					osc.stop(now + 0.3);
+				} else if (type === 'hit') {
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(300, now);
+					osc.frequency.linearRampToValueAtTime(60, now + 0.4);
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+					osc.start(now);
+					osc.stop(now + 0.4);
+				} else if (type === 'evade') {
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(440, now);
+					osc.frequency.exponentialRampToValueAtTime(880, now + 0.25);
+					gain.gain.setValueAtTime(0.1, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+					osc.start(now);
+					osc.stop(now + 0.25);
+				}
+			} catch (e) {
+				console.warn("Audio Context init or playback failed:", e);
+			}
+		}
+
+		// Game setup
+		const canvas = document.getElementById('gameCanvas');
+		const ctx = canvas.getContext('2d');
+
+		// UI elements
+		const alertBox = document.getElementById('alertBox');
+		const camoOverlay = document.getElementById('camouflageOverlay');
+		const cellScore = document.getElementById('cell-score');
+		const cellPineapple = document.getElementById('cell-pineapple');
+		const cellEggtart = document.getElementById('cell-eggtart');
+		const bossProgressBar = document.getElementById('bossProgressBar');
+
+		// Game state
+		let isPlaying = false;
+		let isGameOver = false;
+		let isCamouflage = false;
+		let score = 0;
+		let highScore = 0;
+		let pineappleCount = 0;
+		let eggtartCount = 0;
+
+		// Telemetry counters
+		let frameCount = 0;
+
+		// Camouflage mechanic timers
+		let bossTimer = 0;
+		let bossInterval = 400 + Math.random() * 300; // frames between boss alerts
+		let bossAlertActive = false;
+		let bossAlertDuration = 120; // 2 seconds to react
+		let bossAlertTimer = 0;
+		let bossActive = false;
+		let bossDuration = 180; // 3 seconds supervisor stays
+		let bossTimerCurrent = 0;
+
+		// Player object
+		const player = {
+			x: 100,
+			y: 350,
+			width: 48,
+			height: 48,
+			vy: 0,
+			gravity: 0.6,
+			jumpForce: -12,
+			groundY: 350,
+			isJumping: false,
+			doubleJumpAvailable: true,
+			animFrame: 0,
+			angle: 0
+		};
+
+		// Arrays for game items
+		let obstacles = [];
+		let dimSums = [];
+		let particles = [];
+		let dustTrails = [];
+
+		// Obstacle & Item types
+		const OBSTACLE_TYPES = [
+			{ name: 'document', emoji: '📁', color: '#3498db' },
+			{ name: 'coffee', emoji: '☕', color: '#e67e22' },
+			{ name: 'dispenser', emoji: '🚰', color: '#2ecc71' }
+		];
+
+		const DIMSUM_TYPES = [
+			{ name: 'pineapple', emoji: '🍍', score: 100, label: '菠蘿包' },
+			{ name: 'eggtart', emoji: '🥧', score: 150, label: '蛋撻' }
+		];
+
+		// Key listeners
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				handleActionInput();
+			}
+			if (e.code === 'KeyR' && isGameOver) {
+				resetGame();
+			}
+		});
+
+		canvas.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			handleActionInput();
+		});
+
+		canvas.addEventListener('mousedown', (e) => {
+			handleActionInput();
+		});
+
+		function handleActionInput() {
+			if (isGameOver) {
+				resetGame();
+				return;
+			}
+			if (!isPlaying) {
+				isPlaying = true;
+				return;
+			}
+
+			// If Boss alert is active or boss is currently active, Spacebar toggles Excel sheet!
+			if (bossAlertActive || bossActive) {
+				toggleCamouflage();
+				return;
+			}
+
+			// Otherwise, Spacebar is Jump!
+			if (!player.isJumping) {
+				player.vy = player.jumpForce;
+				player.isJumping = true;
+				player.doubleJumpAvailable = true;
+				playSound('jump');
+			} else if (player.doubleJumpAvailable) {
+				player.vy = player.jumpForce * 0.85;
+				player.doubleJumpAvailable = false;
+				player.angle = 0; // reset spin
+				playSound('jump');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'block';
+				// Sync cell contents
+				cellScore.innerText = score;
+				cellPineapple.innerText = pineappleCount;
+				cellEggtart.innerText = eggtartCount;
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		function spawnObstacle() {
+			const type = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
+			obstacles.push({
+				x: canvas.width + 50,
+				y: player.groundY + 12,
+				width: 32,
+				height: 36,
+				emoji: type.emoji,
+				color: type.color,
+				passed: false
+			});
+		}
+
+		function spawnDimSum() {
+			const type = DIMSUM_TYPES[Math.floor(Math.random() * DIMSUM_TYPES.length)];
+			const isHigh = Math.random() > 0.5;
+			dimSums.push({
+				x: canvas.width + 50,
+				y: isHigh ? player.groundY - 80 : player.groundY - 10,
+				width: 30,
+				height: 30,
+				emoji: type.emoji,
+				type: type.name,
+				scoreValue: type.score,
+				passed: false
+			});
+		}
+
+		function spawnParticle(x, y, color) {
+			for (let i = 0; i < 8; i++) {
+				particles.push({
+					x: x,
+					y: y,
+					vx: (Math.random() - 0.5) * 6,
+					vy: (Math.random() - 0.5) * 6,
+					radius: Math.random() * 4 + 2,
+					color: color || '#f1c40f',
+					life: 30
+				});
+			}
+		}
+
+		function resetGame() {
+			score = 0;
+			pineappleCount = 0;
+			eggtartCount = 0;
+			obstacles = [];
+			dimSums = [];
+			particles = [];
+			dustTrails = [];
+			isPlaying = true;
+			isGameOver = false;
+			isCamouflage = false;
+			camoOverlay.style.display = 'none';
+			alertBox.style.display = 'none';
+			bossTimer = 0;
+			bossAlertActive = false;
+			bossActive = false;
+			player.y = player.groundY;
+			player.vy = 0;
+			player.isJumping = false;
+			player.doubleJumpAvailable = true;
+		}
+
+		// Draw functions
+		function drawGround() {
+			// Sky gradient
+			const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+			skyGrad.addColorStop(0, '#100c24');
+			skyGrad.addColorStop(0.7, '#1b1935');
+			skyGrad.addColorStop(1, '#2c254c');
+			ctx.fillStyle = skyGrad;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Grid pattern in sky
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+			ctx.lineWidth = 1;
+			for (let i = 0; i < canvas.width; i += 40) {
+				ctx.beginPath();
+				ctx.moveTo(i, 0);
+				ctx.lineTo(i, canvas.height);
+				ctx.stroke();
+			}
+			for (let j = 0; j < canvas.height; j += 40) {
+				ctx.beginPath();
+				ctx.moveTo(0, j);
+				ctx.lineTo(canvas.width, j);
+				ctx.stroke();
+			}
+
+			// Ground line
+			ctx.fillStyle = '#141323';
+			ctx.fillRect(0, player.groundY + player.height, canvas.width, canvas.height - player.groundY - player.height);
+
+			ctx.strokeStyle = '#372d65';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(0, player.groundY + player.height);
+			ctx.lineTo(canvas.width, player.groundY + player.height);
+			ctx.stroke();
+		}
+
+		function drawPlayer() {
+			ctx.save();
+			ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+
+			// Rotation for jump styling
+			if (player.isJumping && !player.doubleJumpAvailable) {
+				player.angle += 0.15;
+				ctx.rotate(player.angle);
+			}
+
+			// Draw Cute StupidPig Face (Vector graphics)
+			const scale = 0.9;
+			ctx.scale(scale, scale);
+
+			// Shadow
+			ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+			ctx.beginPath();
+			ctx.ellipse(0, 26, 20, 6, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Body (Pink Circle)
+			ctx.fillStyle = '#ffb3c6';
+			ctx.beginPath();
+			ctx.arc(0, 0, 24, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.strokeStyle = '#ff85a1';
+			ctx.lineWidth = 3;
+			ctx.stroke();
+
+			// Ears
+			ctx.fillStyle = '#ff85a1';
+			// Left Ear
+			ctx.beginPath();
+			ctx.moveTo(-18, -16);
+			ctx.lineTo(-24, -28);
+			ctx.lineTo(-10, -22);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+			// Right Ear
+			ctx.beginPath();
+			ctx.moveTo(18, -16);
+			ctx.lineTo(24, -28);
+			ctx.lineTo(10, -22);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+
+			// Eyes
+			ctx.fillStyle = '#2c3e50';
+			// Normal or Scared Eyes
+			if (bossAlertActive || bossActive) {
+				// Scared eyes (small dots with worried brows)
+				ctx.beginPath();
+				ctx.arc(-8, -4, 2, 0, Math.PI * 2);
+				ctx.arc(8, -4, 2, 0, Math.PI * 2);
+				ctx.fill();
+				
+				ctx.strokeStyle = '#2c3e50';
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(-12, -10); ctx.lineTo(-6, -7);
+				ctx.moveTo(12, -10); ctx.lineTo(6, -7);
+				ctx.stroke();
+			} else {
+				// Happy eyes
+				ctx.beginPath();
+				ctx.arc(-8, -4, 3.5, 0, Math.PI * 2);
+				ctx.arc(8, -4, 3.5, 0, Math.PI * 2);
+				ctx.fill();
+				// Eye sparkles
+				ctx.fillStyle = '#ffffff';
+				ctx.beginPath();
+				ctx.arc(-9, -5, 1, 0, Math.PI * 2);
+				ctx.arc(7, -5, 1, 0, Math.PI * 2);
+				ctx.fill();
+			}
+
+			// Snout (Pig Nose)
+			ctx.fillStyle = '#ff85a1';
+			ctx.beginPath();
+			ctx.ellipse(0, 4, 10, 7, 0, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.strokeStyle = '#ff6384';
+			ctx.lineWidth = 2;
+			ctx.stroke();
+
+			// Nostrils
+			ctx.fillStyle = '#ff3366';
+			ctx.beginPath();
+			ctx.arc(-4, 4, 2, 0, Math.PI * 2);
+			ctx.arc(4, 4, 2, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Blushing cheeks
+			ctx.fillStyle = 'rgba(255, 105, 180, 0.4)';
+			ctx.beginPath();
+			ctx.arc(-15, 3, 5, 0, Math.PI * 2);
+			ctx.arc(15, 3, 5, 0, Math.PI * 2);
+			ctx.fill();
+
+			ctx.restore();
+		}
+
+		function drawObstacles() {
+			obstacles.forEach(obs => {
+				ctx.save();
+				ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
+				ctx.font = '28px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(obs.emoji, 0, 0);
+				ctx.restore();
+			});
+		}
+
+		function drawDimSums() {
+			dimSums.forEach(ds => {
+				ctx.save();
+				ctx.translate(ds.x + ds.width / 2, ds.y + ds.height / 2);
+				// Hover rotation
+				const bob = Math.sin(frameCount / 10 + ds.x / 40) * 4;
+				ctx.font = '26px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(ds.emoji, 0, bob);
+				ctx.restore();
+			});
+		}
+
+		function drawParticles() {
+			particles.forEach((p, idx) => {
+				p.x += p.vx;
+				p.y += p.vy;
+				p.vy += 0.05; // microgravity
+				p.life--;
+
+				ctx.fillStyle = p.color;
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, p.radius * (p.life / 30), 0, Math.PI * 2);
+				ctx.fill();
+
+				if (p.life <= 0) particles.splice(idx, 1);
+			});
+		}
+
+		function drawDustTrails() {
+			dustTrails.forEach((d, idx) => {
+				d.x -= 4; // scroll with ground
+				d.radius -= 0.15;
+				ctx.fillStyle = `rgba(220, 220, 230, ${d.alpha})`;
+				d.alpha -= 0.02;
+
+				ctx.beginPath();
+				ctx.arc(d.x, d.y, Math.max(0, d.radius), 0, Math.PI * 2);
+				ctx.fill();
+
+				if (d.alpha <= 0 || d.radius <= 0) dustTrails.splice(idx, 1);
+			});
+		}
+
+		function drawBossIndicator() {
+			if (bossAlertActive) {
+				alertBox.style.display = 'block';
+				alertBox.innerText = `⚠️ 老老老細行緊過黎！ ${Math.ceil(bossAlertTimer / 30)}s 切換 EXCEL！`;
+			} else {
+				alertBox.style.display = 'none';
+			}
+		}
+
+		function update() {
+			if (!isPlaying || isGameOver || isCamouflage) return;
+
+			frameCount++;
+			bossTimer++;
+
+			// 1. Spawning schedule
+			if (frameCount % 90 === 0 && Math.random() > 0.4 && !bossActive && !bossAlertActive) {
+				spawnObstacle();
+			}
+
+			if (frameCount % 60 === 0 && Math.random() > 0.3) {
+				spawnDimSum();
+			}
+
+			// Dust trail when on ground
+			if (!player.isJumping && frameCount % 6 === 0) {
+				dustTrails.push({
+					x: player.x + 8,
+					y: player.y + player.height - 2,
+					radius: Math.random() * 6 + 4,
+					alpha: 0.6
+				});
+			}
+
+			// 2. Physics & Player bounds
+			player.y += player.vy;
+			player.vy += player.gravity;
+
+			if (player.y >= player.groundY) {
+				player.y = player.groundY;
+				player.vy = 0;
+				player.isJumping = false;
+				player.doubleJumpAvailable = true;
+			}
+
+			// 3. Scroll and update obstacles
+			obstacles.forEach((obs, idx) => {
+				obs.x -= 5.5 + score / 3000; // Speed scaling
+				if (obs.x + obs.width < 0) {
+					obstacles.splice(idx, 1);
+				}
+
+				// Collision detection
+				if (
+					player.x < obs.x + obs.width &&
+					player.x + player.width > obs.x &&
+					player.y < obs.y + obs.height &&
+					player.y + player.height > obs.y
+				) {
+					// Hit!
+					triggerGameOver();
+				}
+			});
+
+			// 4. Scroll and update items
+			dimSums.forEach((ds, idx) => {
+				ds.x -= 5.5 + score / 3000;
+				if (ds.x + ds.width < 0) {
+					dimSums.splice(idx, 1);
+				}
+
+				// Collision detection
+				if (
+					player.x < ds.x + ds.width &&
+					player.x + player.width > ds.x &&
+					player.y < ds.y + ds.height &&
+					player.y + player.height > ds.y
+				) {
+					// Collect!
+					spawnParticle(ds.x + ds.width/2, ds.y + ds.height/2, ds.type === 'pineapple' ? '#f1c40f' : '#e67e22');
+					if (ds.type === 'pineapple') {
+						pineappleCount++;
+						score += ds.scoreValue;
+					} else {
+						eggtartCount++;
+						score += ds.scoreValue;
+					}
+					playSound('dimsum');
+					dimSums.splice(idx, 1);
+				}
+			});
+
+			// Incremental score
+			score += 1;
+
+			// 5. Boss alert cycle
+			if (bossTimer >= bossInterval && !bossAlertActive && !bossActive) {
+				bossAlertActive = true;
+				bossAlertTimer = bossAlertDuration;
+				playSound('alert');
+			}
+
+			if (bossAlertActive) {
+				bossAlertTimer--;
+				if (bossAlertTimer % 20 === 0) playSound('alert');
+				
+				if (bossAlertTimer <= 0) {
+					// Alert ends, Boss enters!
+					bossAlertActive = false;
+					bossActive = true;
+					bossTimerCurrent = bossDuration;
+				}
+			}
+
+			if (bossActive) {
+				bossTimerCurrent--;
+				if (bossTimerCurrent <= 0) {
+					// Boss leaves, safety!
+					bossActive = false;
+					bossTimer = 0;
+					bossInterval = 500 + Math.random() * 400; // Schedule next inspection
+					playSound('evade');
+				}
+			}
+		}
+
+		function triggerGameOver() {
+			isGameOver = true;
+			isPlaying = false;
+			playSound('hit');
+			submitScore(score);
+		}
+
+		// Camouflage sheet background update
+		function updateCamouflageMode() {
+			if (!isCamouflage) return;
+
+			// Progress bar updates while hiding
+			if (bossActive) {
+				const percent = ((bossDuration - bossTimerCurrent) / bossDuration) * 100;
+				bossProgressBar.style.width = `${percent}%`;
+				bossTimerCurrent--;
+				if (bossTimerCurrent <= 0) {
+					bossActive = false;
+					bossTimer = 0;
+					bossInterval = 500 + Math.random() * 400;
+					isCamouflage = false;
+					camoOverlay.style.display = 'none';
+					playSound('evade');
+				}
+			} else if (bossAlertActive) {
+				const percent = ((bossAlertDuration - bossAlertTimer) / bossAlertDuration) * 100;
+				bossProgressBar.style.width = `${percent}%`;
+				bossAlertTimer--;
+				if (bossAlertTimer <= 0) {
+					bossAlertActive = false;
+					bossActive = true;
+					bossTimerCurrent = bossDuration;
+				}
+			} else {
+				// Static display for manual camo trigger
+				bossProgressBar.style.width = '100%';
+			}
+		}
+
+		function render() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			// Render active background
+			drawGround();
+			drawDustTrails();
+			drawObstacles();
+			drawDimSums();
+			drawPlayer();
+			drawParticles();
+
+			// Alert warnings
+			drawBossIndicator();
+
+			// HUD Display
+			ctx.fillStyle = '#ffffff';
+			ctx.font = 'bold 16px -apple-system, sans-serif';
+			ctx.fillText(`得分 (Score): ${score}`, 20, 30);
+			ctx.fillText(`🍍 菠蘿包: ${pineappleCount}  🥧 蛋撻: ${eggtartCount}`, 20, 55);
+
+			if (highScore > 0) {
+				ctx.fillStyle = '#ff9500';
+				ctx.fillText(`最高紀錄 (Best): ${highScore}`, canvas.width - 180, 30);
+			}
+
+			// Screen overlays
+			if (!isPlaying && !isGameOver) {
+				// Welcome screen
+				ctx.fillStyle = 'rgba(12, 11, 22, 0.85)';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				ctx.fillStyle = '#ff85a1';
+				ctx.font = 'bold 28px -apple-system, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText('傻豬辦公室大逃亡', canvas.width / 2, canvas.height / 2 - 40);
+
+				ctx.fillStyle = '#ffffff';
+				ctx.font = '16px -apple-system, sans-serif';
+				ctx.fillText('避開辦公桌雜物，收集點心！', canvas.width / 2, canvas.height / 2 + 10);
+				ctx.fillStyle = '#2ecc71';
+				ctx.font = 'bold 18px -apple-system, sans-serif';
+				ctx.fillText('按 [空格鍵] 彈跳跳躍 / 切換 EXCEL 扮工', canvas.width / 2, canvas.height / 2 + 50);
+
+				ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+				ctx.font = '12px -apple-system, sans-serif';
+				ctx.fillText('滑鼠點擊或觸控螢幕亦可操作', canvas.width / 2, canvas.height / 2 + 90);
+			}
+
+			if (isGameOver) {
+				// Game over screen
+				ctx.fillStyle = 'rgba(255, 59, 48, 0.2)';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				ctx.fillStyle = 'rgba(12, 11, 22, 0.9)';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				ctx.fillStyle = '#ff3b30';
+				ctx.font = 'bold 36px -apple-system, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText('你被老細捉到了！ 😭', canvas.width / 2, canvas.height / 2 - 30);
+
+				ctx.fillStyle = '#ffffff';
+				ctx.font = '20px -apple-system, sans-serif';
+				ctx.fillText(`最終摸魚得分: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+
+				ctx.fillStyle = '#2ecc71';
+				ctx.font = 'bold 16px -apple-system, sans-serif';
+				ctx.fillText('按 [空格鍵] 或 [R] 鍵重新開始', canvas.width / 2, canvas.height / 2 + 70);
+
+				if (score > highScore) {
+					highScore = score;
+				}
+			}
+		}
+
+		// Core loop
+		function loop() {
+			if (isCamouflage) {
+				updateCamouflageMode();
+			} else {
+				// Normal running update
+				update();
+				// If Boss enters and user did NOT open Excel, Game Over!
+				if (bossActive && !isCamouflage) {
+					triggerGameOver();
+				}
+			}
+			render();
+			requestAnimationFrame(loop);
+		}
+
+		// Start game loop
+		loop();
+	</script>
+</body>
+</html>

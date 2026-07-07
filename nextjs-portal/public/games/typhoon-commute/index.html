@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+	<meta charset="utf-8">
+	<title>十號風球返工記 (Typhoon Signal No. 10 Commute)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<style>
+		:root {
+			--neon-pink: #ff2a85;
+			--neon-blue: #00f0ff;
+			--gold: #ffd700;
+			--bg-dark: #090910;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			user-select: none;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		body, html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background-color: var(--bg-dark);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		#game-container {
+			position: relative;
+			width: 100%;
+			max-width: 800px;
+			height: 100%;
+			max-height: 600px;
+			background-color: #0b0914;
+			border: 2px solid rgba(0, 240, 255, 0.45);
+			border-radius: 12px;
+			box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+			overflow: hidden;
+		}
+
+		#game-canvas {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		/* HUD stats overlay */
+		.hud-panel {
+			position: absolute;
+			top: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.hud-card {
+			background: rgba(11, 9, 20, 0.85);
+			border: 1px solid rgba(0, 240, 255, 0.35);
+			border-radius: 8px;
+			padding: 8px 16px;
+			color: #fff;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			backdrop-filter: blur(5px);
+			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+		}
+
+		.score-label {
+			color: var(--gold);
+			font-weight: bold;
+			font-size: 1.25rem;
+			font-family: monospace;
+		}
+
+		/* Gust mashing button container */
+		#gust-overlay {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background: rgba(183, 28, 28, 0.9);
+			border: 2px solid #ff3333;
+			border-radius: 12px;
+			padding: 20px;
+			text-align: center;
+			color: #fff;
+			display: none;
+			z-index: 50;
+			box-shadow: 0 8px 25px rgba(255, 51, 51, 0.4);
+		}
+
+		/* Mobile controls panel */
+		.mobile-controls {
+			position: absolute;
+			bottom: 15px;
+			left: 15px;
+			right: 15px;
+			display: flex;
+			justify-content: space-between;
+			z-index: 20;
+		}
+
+		.control-btn {
+			background: linear-gradient(180deg, #1b3535 0%, #0d1e1e 100%);
+			border: 1px solid rgba(0, 255, 240, 0.3);
+			color: #fff;
+			padding: 14px 24px;
+			border-radius: 10px;
+			font-weight: bold;
+			cursor: pointer;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+		}
+
+		/* Game over overlay */
+		.game-over-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(8, 6, 12, 0.9);
+			display: none;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			color: #fff;
+			z-index: 100;
+			text-align: center;
+		}
+
+		.game-btn {
+			background: linear-gradient(180deg, #00f0ff 0%, #00a4b3 100%);
+			color: #000;
+			border: none;
+			padding: 10px 24px;
+			border-radius: 8px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 12px rgba(0, 240, 255, 0.3);
+			margin-top: 12px;
+		}
+
+		/* Excel Camouflage */
+		#camo-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #f3f2f1;
+			z-index: 1000;
+			display: none;
+			flex-direction: column;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #323130;
+		}
+
+		.excel-titlebar {
+			background-color: #107c41;
+			color: white;
+			padding: 8px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.excel-toolbar {
+			background-color: #f3f2f1;
+			border-bottom: 1px solid #e1dfdd;
+			padding: 6px 16px;
+			display: flex;
+			gap: 20px;
+			font-size: 0.8rem;
+		}
+
+		.excel-grid-container {
+			flex: 1;
+			overflow: auto;
+		}
+
+		.excel-table {
+			border-collapse: collapse;
+			background-color: white;
+			width: 100%;
+		}
+
+		.excel-table th, .excel-table td {
+			border: 1px solid #d2d0ce;
+			padding: 6px 12px;
+			font-size: 0.8rem;
+		}
+
+		.excel-table th {
+			background-color: #f3f2f1;
+			font-weight: normal;
+			color: #323130;
+		}
+
+		.excel-cell-header {
+			background-color: #f3f2f1;
+			text-align: center;
+			color: #505050;
+			width: 40px;
+		}
+	</style>
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="game-canvas"></canvas>
+
+		<!-- HUD overlay stats -->
+		<div class="hud-panel">
+			<div class="hud-card">
+				<div>🌀 十號風球返工記</div>
+				<div style="margin-top: 4px;">距離公司: <span class="score-label" id="dist-val">500 m</span></div>
+			</div>
+			<div class="hud-card" style="text-align: right;">
+				<div>雨傘受損: <span class="score-label" id="soaked-val" style="color: var(--neon-pink);">0%</span></div>
+				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			</div>
+		</div>
+
+		<!-- Gust overlay screen -->
+		<div id="gust-overlay">
+			<h3 style="font-size: 1.4rem; color: var(--gold); margin-bottom: 6px;">🚨 超強颶風吹襲！</h3>
+			<p style="font-size: 0.85rem; margin-bottom: 12px;">狂撳 [↑ / 空白] 抵抗大風！ (Mash Up/Tap Screen!)</p>
+			<div style="font-weight: bold; font-size: 1.8rem;" id="mash-bar">MASH!</div>
+		</div>
+
+		<!-- Mobile control buttons -->
+		<div class="mobile-controls">
+			<button class="control-btn" id="left-btn">撐起雨傘 (Shield)</button>
+			<button class="control-btn" id="right-btn" style="background: linear-gradient(180deg, #00f0ff 0%, #007680 100%);">跳躍 (Jump)</button>
+		</div>
+
+		<!-- Game Over layout -->
+		<div class="game-over-overlay" id="end-overlay">
+			<h2 style="font-size: 2.2rem; color: var(--neon-pink); margin-bottom: 10px;" id="end-title">感冒發燒！ (Cold Over)</h2>
+			<p style="font-size: 1.1rem; color: #aaa; margin-bottom: 15px; max-width: 450px;" id="end-desc">
+				大雨將你全身淋濕，被迫送院治療！
+			</p>
+			<button class="game-btn" id="restart-btn">繼續返工 (Commute Again)</button>
+		</div>
+
+		<!-- Excel Camouflage -->
+		<div id="camo-overlay">
+			<div class="excel-titlebar">
+				<span>Microsoft Excel - Typhoon_Disaster_Emergency_Procedures.xlsx</span>
+				<span>[扮工中 - 按空白鍵返回遊戲]</span>
+			</div>
+			<div class="excel-toolbar">
+				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
+				<span>常用</span>
+				<span>防災守則</span>
+				<span>工時折抵</span>
+			</div>
+			<div class="excel-grid-container">
+				<table class="excel-table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>A (風球信號)</th>
+							<th>B (上班規定)</th>
+							<th>C (通勤保障)</th>
+							<th>D (今日通勤距離)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="excel-cell-header">1</td>
+							<td style="font-weight: bold;">惡劣天氣公司保障條例</td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">2</td>
+							<td>十號風球 (颶風)</td>
+							<td>強烈建議回辦公室</td>
+							<td>李氏力場發揮中</td>
+							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">500 m</td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">3</td>
+							<td>八號烈風</td>
+							<td>照常上班</td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">4</td>
+							<td>黑色暴雨</td>
+							<td>不予遲到免責</td>
+							<td></td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Audio Synthesis
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		let audioCtx = null;
+
+		function initAudio() {
+			if (!audioCtx) audioCtx = new AudioContext();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+		}
+
+		function playSound(type) {
+			try {
+				initAudio();
+				if (!audioCtx) return;
+				const now = audioCtx.currentTime;
+
+				if (type === 'jump') {
+					// Soft woosh
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(150, now);
+					osc.frequency.exponentialRampToValueAtTime(350, now + 0.15);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.15);
+				} else if (type === 'hit') {
+					// Metal collision crash
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(180, now);
+					osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.35, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.25);
+				} else if (type === 'win') {
+					// Happy trumpet theme
+					const notes = [523.25, 659.25, 783.99, 1046.50];
+					notes.forEach((freq, idx) => {
+						const noteTime = now + idx * 0.12;
+						const osc = audioCtx.createOscillator();
+						osc.frequency.setValueAtTime(freq, noteTime);
+						const gain = audioCtx.createGain();
+						gain.gain.setValueAtTime(0.2, noteTime);
+						gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.2);
+						osc.connect(gain);
+						gain.connect(audioCtx.destination);
+						osc.start(noteTime);
+						osc.stop(noteTime + 0.2);
+					});
+				}
+			} catch(e) {
+				console.warn(e);
+			}
+		}
+
+		// Game State
+		let distance = 500; // meters to office
+		let soaked = 0; // percentage
+		let isPlaying = true;
+		let isCamouflage = false;
+
+		// Character physics
+		let pig = {
+			x: 100,
+			y: 400,
+			vy: 0,
+			radius: 20,
+			isJumping: false,
+			isShielding: false
+		};
+
+		// Wind Gust system
+		let isGusting = false;
+		let gustTimer = 0;
+		let gustMashCount = 0;
+
+		// Obstacles & Rain lines
+		let obstacles = [];
+		let rainLines = [];
+
+		const OBSTACLE_TYPES = [
+			{ name: '垃圾桶 (Bin)', emoji: '🗑️', speed: -5, height: 35, width: 25 },
+			{ name: '發泡膠箱 (Box)', emoji: '📦', speed: -4, height: 25, width: 30 },
+			{ name: '招牌 (Signboard)', emoji: '🏮', speed: -7, height: 60, width: 40, flyer: true }
+		];
+
+		const canvas = document.getElementById('game-canvas');
+		const ctx = canvas.getContext('2d');
+
+		function resizeCanvas() {
+			const container = document.getElementById('game-container');
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+			pig.y = canvas.height * 0.72;
+		}
+		window.addEventListener('resize', resizeCanvas);
+		resizeCanvas();
+
+		const distVal = document.getElementById('dist-val');
+		const soakedVal = document.getElementById('soaked-val');
+		const endOverlay = document.getElementById('end-overlay');
+		const endTitle = document.getElementById('end-title');
+		const endDesc = document.getElementById('end-desc');
+		const restartBtn = document.getElementById('restart-btn');
+
+		const gustOverlay = document.getElementById('gust-overlay');
+		const mashBar = document.getElementById('mash-bar');
+
+		const leftBtn = document.getElementById('left-btn');
+		const rightBtn = document.getElementById('right-btn');
+
+		const camoOverlay = document.getElementById('camo-overlay');
+		const excelScoreVal = document.getElementById('excel-score-val');
+
+		function jump() {
+			if (!isPlaying || isCamouflage) return;
+			if (!pig.isJumping) {
+				pig.vy = -12;
+				pig.isJumping = true;
+				playSound('jump');
+			}
+		}
+
+		function toggleShield(shieldOn) {
+			pig.isShielding = shieldOn;
+			if (shieldOn) {
+				leftBtn.style.background = '#00f0ff';
+				leftBtn.style.color = '#000';
+			} else {
+				leftBtn.style.background = 'linear-gradient(180deg, #1b3535 0%, #0d1e1e 100%)';
+				leftBtn.style.color = '#fff';
+			}
+		}
+
+		function handleMash() {
+			if (isGusting) {
+				gustMashCount++;
+				mashBar.textContent = `MASH: ${gustMashCount} / 12`;
+				if (gustMashCount >= 12) {
+					// Beat the wind gust!
+					isGusting = false;
+					gustOverlay.style.display = 'none';
+				}
+			}
+		}
+
+		function triggerWindGust() {
+			if (isGusting || Math.random() > 0.005) return;
+			isGusting = true;
+			gustMashCount = 0;
+			gustOverlay.style.display = 'block';
+			mashBar.textContent = `MASH: 0 / 12`;
+		}
+
+		function updateGame() {
+			if (!isPlaying || isCamouflage) return;
+
+			// Distance progression
+			if (!isGusting) {
+				distance = Math.max(0, distance - 0.25);
+				distVal.textContent = `${Math.floor(distance)} m`;
+				excelScoreVal.textContent = `${Math.floor(distance)} m`;
+
+				if (distance <= 0) {
+					// Win!
+					isPlaying = false;
+					showEnd(true);
+				}
+			}
+
+			// Generate rain lines
+			if (rainLines.length < 80) {
+				rainLines.push({
+					x: Math.random() * canvas.width * 1.5,
+					y: -20,
+					len: 15 + Math.random() * 25,
+					vx: -7 - Math.random() * 8,
+					vy: 10 + Math.random() * 6
+				});
+			}
+
+			// Update Rain lines
+			for (let i = rainLines.length - 1; i >= 0; i--) {
+				const r = rainLines[i];
+				r.x += r.vx;
+				r.y += r.vy;
+				if (r.y > canvas.height || r.x < 0) {
+					rainLines.splice(i, 1);
+				}
+			}
+
+			// Generate obstacles
+			if (obstacles.length < 2 && Math.random() < 0.015) {
+				const type = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
+				const baseHeight = canvas.height * 0.72;
+				obstacles.push({
+					name: type.name,
+					emoji: type.emoji,
+					x: canvas.width + 40,
+					y: type.flyer ? baseHeight - 40 - Math.random()*80 : baseHeight,
+					width: type.width,
+					height: type.height,
+					speed: type.speed
+				});
+			}
+
+			// Update obstacles
+			const pigBaseY = canvas.height * 0.72;
+			for (let i = obstacles.length - 1; i >= 0; i--) {
+				const o = obstacles[i];
+				o.x += o.speed;
+
+				// Collision detection
+				const dx = o.x - pig.x;
+				const dy = o.y - pig.y;
+				const dist = Math.sqrt(dx*dx + dy*dy);
+
+				if (dist < pig.radius + 15) {
+					// Hit obstacle
+					playSound('hit');
+					if (pig.isShielding) {
+						// Shielded! Soaked increases slightly, obstacle bounces back
+						soaked = Math.min(100, soaked + 10);
+					} else {
+						// Hit raw! Umbrella breaks, massive soak penalty
+						soaked = Math.min(100, soaked + 30);
+					}
+					soakedVal.textContent = `${soaked}%`;
+
+					if (soaked >= 100) {
+						isPlaying = false;
+						showEnd(false);
+					}
+
+					obstacles.splice(i, 1);
+					continue;
+				}
+
+				if (o.x < -50) {
+					obstacles.splice(i, 1);
+				}
+			}
+
+			// Gravity physics for jumping pig
+			pig.y += pig.vy;
+			pig.vy += 0.55; // Gravity pulling pig down
+
+			if (pig.y >= pigBaseY) {
+				pig.y = pigBaseY;
+				pig.vy = 0;
+				pig.isJumping = false;
+			}
+
+			// Periodically trigger wind gust
+			triggerWindGust();
+
+			if (isGusting) {
+				// Blown backwards slightly
+				pig.x = Math.max(50, pig.x - 0.8);
+			} else {
+				// Crawl forward to default position
+				pig.x = Math.min(100, pig.x + 0.3);
+			}
+		}
+
+		function showEnd(success) {
+			endOverlay.style.display = 'flex';
+			if (success) {
+				endTitle.textContent = "🎉 順利抵達公司！";
+				endTitle.style.color = "var(--neon-blue)";
+				endDesc.innerHTML = `
+					恭喜！你頂著十號颶風戰勝了所有飛來的垃圾桶，<strong>順利在 08:59 分打卡上班！</strong><br>
+					老細十分欣賞你嘅敬業精神，並為你準備了一疊新的工作！
+				`;
+				submitScoreToParent(1000 - soaked);
+			} else {
+				endTitle.textContent = "❌ 全身濕透病倒！";
+				endTitle.style.color = "var(--neon-pink)";
+				endDesc.innerHTML = `
+					大風把你的雨傘吹碎，豪雨將你澆成了<strong>落湯豬</strong>！<br>
+					你感冒高燒 40 度，被救護車送離了上班路。
+				`;
+				submitScoreToParent(0);
+			}
+		}
+
+		function drawScene(ctx) {
+			// Draw sky & stormy ground
+			ctx.fillStyle = '#0f0c1b';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Ground road line
+			const roadY = canvas.height * 0.72 + 20;
+			ctx.fillStyle = '#1e1c2a';
+			ctx.fillRect(0, roadY, canvas.width, canvas.height - roadY);
+			ctx.strokeStyle = '#433f5b';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(0, roadY);
+			ctx.lineTo(canvas.width, roadY);
+			ctx.stroke();
+
+			// Draw diagonal rain lines
+			ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+			ctx.lineWidth = 1.5;
+			rainLines.forEach(r => {
+				ctx.beginPath();
+				ctx.moveTo(r.x, r.y);
+				ctx.lineTo(r.x + r.vx, r.y + r.vy);
+				ctx.stroke();
+			});
+
+			// Draw obstacles
+			ctx.font = '28px sans-serif';
+			ctx.textAlign = 'center';
+			obstacles.forEach(o => {
+				ctx.fillText(o.emoji, o.x, o.y + 10);
+			});
+
+			// Draw running Pig character
+			const px = pig.x;
+			const py = pig.y;
+
+			ctx.save();
+			// Draw pig body
+			ctx.fillStyle = '#ffd0db';
+			ctx.beginPath();
+			ctx.arc(px, py, pig.radius, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Pig snout
+			ctx.fillStyle = '#ffb3c1';
+			ctx.beginPath();
+			ctx.ellipse(px - 14, py + 2, 7, 5, 0, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Pig ears
+			ctx.beginPath();
+			ctx.moveTo(px - 6, py - 18);
+			ctx.lineTo(px - 12, py - 26);
+			ctx.lineTo(px, py - 20);
+			ctx.fill();
+
+			// Eye
+			ctx.fillStyle = '#000';
+			ctx.beginPath();
+			ctx.arc(px - 6, py - 4, 2, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Draw translucent Umbrella
+			ctx.restore();
+			ctx.save();
+			if (pig.isShielding) {
+				// Shelter umbrella angled to the left against wind
+				ctx.strokeStyle = '#00f0ff';
+				ctx.fillStyle = 'rgba(0,240,255,0.4)';
+				ctx.lineWidth = 3.5;
+				ctx.beginPath();
+				ctx.arc(px - 22, py - 4, 25, Math.PI * 0.9, -Math.PI * 0.2);
+				ctx.stroke();
+				ctx.fill();
+
+				// Stick handle
+				ctx.strokeStyle = '#fff';
+				ctx.beginPath();
+				ctx.moveTo(px, py + 5);
+				ctx.lineTo(px - 26, py - 10);
+				ctx.stroke();
+			} else {
+				// Normal vertical carry umbrella
+				ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+				ctx.fillStyle = 'rgba(255,255,255,0.2)';
+				ctx.lineWidth = 3;
+				ctx.beginPath();
+				ctx.arc(px - 10, py - 24, 20, Math.PI * 1.1, -Math.PI * 0.1);
+				ctx.stroke();
+				ctx.fill();
+
+				ctx.strokeStyle = '#fff';
+				ctx.beginPath();
+				ctx.moveTo(px - 5, py);
+				ctx.lineTo(px - 10, py - 28);
+				ctx.stroke();
+			}
+			ctx.restore();
+		}
+
+		function gameLoop() {
+			updateGame();
+			drawScene(ctx);
+			requestAnimationFrame(gameLoop);
+		}
+
+		// Keyboard controls
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				if (isCamouflage) {
+					toggleCamouflage();
+				} else if (isGusting) {
+					handleMash();
+				} else {
+					toggleCamouflage();
+				}
+			} else if (e.code === 'ArrowUp') {
+				e.preventDefault();
+				if (isGusting) {
+					handleMash();
+				} else {
+					jump();
+				}
+			} else if (e.code === 'ArrowDown') {
+				e.preventDefault();
+				toggleShield(true);
+			}
+		});
+
+		window.addEventListener('keyup', (e) => {
+			if (e.code === 'ArrowDown') {
+				toggleShield(false);
+			}
+		});
+
+		// Buttons for mobile
+		leftBtn.addEventListener('mousedown', () => toggleShield(true));
+		leftBtn.addEventListener('mouseup', () => toggleShield(false));
+		leftBtn.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			toggleShield(true);
+		});
+		leftBtn.addEventListener('touchend', (e) => {
+			e.preventDefault();
+			toggleShield(false);
+		});
+
+		rightBtn.addEventListener('mousedown', jump);
+		rightBtn.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			if (isGusting) {
+				handleMash();
+			} else {
+				jump();
+			}
+		});
+
+		restartBtn.addEventListener('click', () => {
+			location.reload();
+		});
+
+		function submitScoreToParent(finalScore) {
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'STUPIDPIG_SCORE_UPDATED',
+					gameId: 'typhoon-commute',
+					score: finalScore
+				}, '*');
+			}
+		}
+
+		function toggleCamouflage() {
+			isCamouflage = !isCamouflage;
+			if (isCamouflage) {
+				camoOverlay.style.display = 'flex';
+			} else {
+				camoOverlay.style.display = 'none';
+			}
+		}
+
+		// Start
+		gameLoop();
+	</script>
+</body>
+</html>
