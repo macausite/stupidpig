@@ -42,11 +42,13 @@
 			border-radius: 12px;
 			box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);
 			overflow: hidden;
+			display: flex;
+			flex-direction: column;
 		}
 
 		#game-canvas {
 			width: 100%;
-			height: 100%;
+			height: 66%;
 			display: block;
 		}
 
@@ -109,10 +111,10 @@
 
 		/* Slang Buttons Container */
 		.options-grid {
-			position: absolute;
-			bottom: 25px;
-			left: 15px;
-			right: 15px;
+			position: relative;
+			width: calc(100% - 30px);
+			margin: 10px auto 12px auto;
+			height: 29%;
 			display: grid;
 			grid-template-columns: repeat(2, 1fr);
 			gap: 12px;
@@ -228,33 +230,37 @@
 
 		/* Mobile / Low Height Viewport Adjustments to prevent UI overlapping */
 		@media (max-width: 500px), (max-height: 500px) {
+			#game-canvas {
+				height: 56%;
+			}
 			.options-grid {
-				bottom: 12px;
+				height: 38%;
+				margin: 5px auto 8px auto;
 				gap: 8px;
 			}
 			.slang-btn {
-				padding: 10px 8px;
-				font-size: 0.82rem;
+				padding: 8px 6px;
+				font-size: 0.8rem;
 				border-radius: 6px;
 			}
 			.target-container {
-				top: 65px;
-				padding: 6px 16px;
+				top: 55px;
+				padding: 4px 12px;
 			}
 			.target-dest {
-				font-size: 1.2rem;
+				font-size: 1.15rem;
 			}
 			.hud-panel {
-				top: 8px;
+				top: 6px;
 				left: 8px;
 				right: 8px;
 			}
 			.hud-card {
-				padding: 4px 10px;
-				font-size: 0.72rem;
+				padding: 4px 8px;
+				font-size: 0.68rem;
 			}
 			.score-label {
-				font-size: 0.95rem;
+				font-size: 0.9rem;
 			}
 		}
 	</style>
@@ -490,9 +496,8 @@
 		const ctx = canvas.getContext('2d');
 
 		function resizeCanvas() {
-			const container = document.getElementById('game-container');
-			canvas.width = container.clientWidth;
-			canvas.height = container.clientHeight;
+			canvas.width = canvas.clientWidth;
+			canvas.height = canvas.clientHeight;
 			busY = canvas.height * 0.58;
 			signY = canvas.height * 0.42;
 		}
