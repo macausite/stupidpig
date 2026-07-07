@@ -465,8 +465,8 @@ body, html {
     gap: 12px;
   }
   .play-container-wrapper {
-    height: 400px;
-    max-height: 65vh;
+    height: 520px;
+    max-height: 75vh;
   }
 }
 
