@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import Head from 'next/head';
 import '../styles/globals.css';
+
 
 function MyApp({ Component, pageProps }) {
   const [coins, setCoins] = useState(0);
@@ -28,14 +30,19 @@ function MyApp({ Component, pageProps }) {
   };
 
   return (
-    <Component
-      {...pageProps}
-      userCoins={coins}
-      userPoints={points}
-      username={username}
-      onUpdateCoins={handleUpdateCoins}
-      onUpdatePoints={handleUpdatePoints}
-    />
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
+      <Component
+        {...pageProps}
+        userCoins={coins}
+        userPoints={points}
+        username={username}
+        onUpdateCoins={handleUpdateCoins}
+        onUpdatePoints={handleUpdatePoints}
+      />
+    </>
   );
 }
 
