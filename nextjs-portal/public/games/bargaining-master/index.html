@@ -42,11 +42,13 @@
 			border-radius: 12px;
 			box-shadow: 0 0 35px rgba(255, 51, 51, 0.15);
 			overflow: hidden;
+			display: flex;
+			flex-direction: column;
 		}
 
 		#game-canvas {
 			width: 100%;
-			height: 100%;
+			height: 62%;
 			display: block;
 		}
 
@@ -108,14 +110,14 @@
 
 		/* Bargaining Slider Meter */
 		.bargain-controls {
-			position: absolute;
-			bottom: 20px;
-			left: 15px;
-			right: 15px;
+			position: relative;
+			width: calc(100% - 30px);
+			margin: 10px auto 12px auto;
+			height: 33%;
 			background: rgba(22, 20, 36, 0.85);
 			border: 1px solid rgba(255, 255, 255, 0.15);
 			border-radius: 10px;
-			padding: 16px;
+			padding: 12px;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -246,8 +248,12 @@
 
 		/* Mobile / Low Height Viewport Adjustments */
 		@media (max-width: 500px), (max-height: 500px) {
+			#game-canvas {
+				height: 50%;
+			}
 			.bargain-controls {
-				bottom: 12px;
+				height: 44%;
+				margin: 5px auto 8px auto;
 				padding: 10px;
 				gap: 8px;
 			}
@@ -509,9 +515,8 @@
 		const ctx = canvas.getContext('2d');
 
 		function resizeCanvas() {
-			const container = document.getElementById('game-container');
-			canvas.width = container.clientWidth;
-			canvas.height = container.clientHeight;
+			canvas.width = canvas.clientWidth;
+			canvas.height = canvas.clientHeight;
 		}
 		window.addEventListener('resize', resizeCanvas);
 		resizeCanvas();
