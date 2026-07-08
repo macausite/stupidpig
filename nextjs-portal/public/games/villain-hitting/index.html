@@ -195,7 +195,7 @@
 		}
 
 		.options-list {
-			max-height: 96px;
+			max-height: 130px;
 			overflow-y: auto;
 			-webkit-overflow-scrolling: touch;
 			margin-bottom: 10px;
@@ -204,6 +204,22 @@
 			border-radius: 8px;
 			padding: 4px;
 			background: rgba(0,0,0,0.15);
+		}
+
+		/* Custom scrollbar for options-list to match dark neon theme */
+		.options-list::-webkit-scrollbar {
+			width: 6px;
+		}
+		.options-list::-webkit-scrollbar-track {
+			background: rgba(0, 0, 0, 0.3);
+			border-radius: 4px;
+		}
+		.options-list::-webkit-scrollbar-thumb {
+			background: rgba(157, 78, 221, 0.5);
+			border-radius: 4px;
+		}
+		.options-list::-webkit-scrollbar-thumb:hover {
+			background: var(--neon-purple);
 		}
 
 		.target-option:hover {
