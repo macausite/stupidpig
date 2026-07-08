@@ -158,18 +158,12 @@ body, html {
   gap: 24px;
 }
 
-/* TWO-COLUMN LAYOUT */
+/* ONE-COLUMN FULL-WIDTH LAYOUT */
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 24px;
   width: 100%;
-}
-
-.dashboard-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 /* MONOLITHIC APPLE-STYLE MINIMAL CARDS */

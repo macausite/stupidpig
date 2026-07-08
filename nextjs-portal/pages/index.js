@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import DashboardGrid from '../components/DashboardGrid';
-import DailyStreakPanel from '../components/DailyStreakPanel';
-import LeaderboardList from '../components/LeaderboardList';
-import DailyChallengePanel from '../components/DailyChallengePanel';
-import AchievementPanel from '../components/AchievementPanel';
-import LiveActivityFeed from '../components/LiveActivityFeed';
-import RecentlyPlayedPanel from '../components/RecentlyPlayedPanel';
 
 export default function Home({ userCoins, userPoints, onUpdateCoins }) {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -68,7 +62,7 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
 
         <div className="dashboard-layout">
           {/* LEFT AREA: GAME SHEETS */}
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
             <div className="category-filters">
               {[
                 { id: 'all', label: '📂 全部遊戲' },
@@ -89,16 +83,6 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
 
             <DashboardGrid activeCategory={activeCategory} />
           </section>
-
-          {/* RIGHT AREA: RETENTION PANELS */}
-          <aside className="dashboard-sidebar">
-            <DailyChallengePanel onEarnCoins={onUpdateCoins} />
-            <RecentlyPlayedPanel />
-            <AchievementPanel userCoins={userCoins} />
-            <DailyStreakPanel onEarnCoins={onUpdateCoins} />
-            <LiveActivityFeed />
-            <LeaderboardList userScore={userPoints} />
-          </aside>
         </div>
       </main>
 
