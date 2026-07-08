@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import DashboardGrid from '../components/DashboardGrid';
 
 export default function Home({ userCoins, userPoints, onUpdateCoins }) {
@@ -88,13 +89,19 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
 
       {/* FOOTER */}
       <footer style={{ borderTop: '1px solid var(--border-color)', padding: '24px', textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
-        <p>© 2026 StupidPig.com 傻豬遊戲網. All rights reserved. 粵ICP備88888888號.</p>
+        <p>© 2026 StupidPig.com 傻豬遊戲網. All rights reserved.</p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '6px' }}>
-          <span style={{ cursor: 'pointer' }}>私隱政策</span>
+          <Link href="/privacy" legacyBehavior>
+            <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>私隱政策</a>
+          </Link>
           <span>|</span>
-          <span style={{ cursor: 'pointer' }}>服務條款</span>
+          <Link href="/terms" legacyBehavior>
+            <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>服務條款</a>
+          </Link>
           <span>|</span>
-          <span style={{ cursor: 'pointer' }}>聯絡我們 (搵食合作)</span>
+          <Link href="/contact" legacyBehavior>
+            <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>聯絡我們 (搵食合作)</a>
+          </Link>
         </div>
       </footer>
     </div>
