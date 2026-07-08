@@ -464,9 +464,15 @@ body, html {
     padding: 12px;
     gap: 12px;
   }
-  .play-container-wrapper {
-    height: 520px;
+  .play-container-wrapper.portrait-frame {
+    height: auto;
+    aspect-ratio: 3 / 4;
     max-height: 75vh;
+  }
+  .play-container-wrapper.landscape-frame {
+    height: auto;
+    aspect-ratio: 16 / 10;
+    max-height: 50vh;
   }
 }
 

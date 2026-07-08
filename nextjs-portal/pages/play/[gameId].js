@@ -30,12 +30,51 @@ const CONTROLS_MAP = {
   tuxocide: '【W/A/S/D】控制移動 | 【滑鼠點擊】開槍射擊恐龍',
   aigeneratedgame: '【滑鼠點擊】控制射擊方向，彈射方塊獲得分數',
   tuxvsdragon: '【W/A/S/D】移動 | 【Space】掟雪球 | 【C】換相機視角',
-  k1945: '【滑鼠拖拽 或 W/A/S/D】控制戰機移動 | 【U】發射子彈 | 【I】投放炸彈'
+};
+
+const GAME_ORIENTATIONS = {
+  // Portrait games
+  'stupidpig-escape': 'portrait',
+  'villain-hitting': 'portrait',
+  'temple-chim': 'portrait',
+  'red-minibus': 'portrait',
+  'rainbow-toss': 'portrait',
+  'waiter-frenzy': 'portrait',
+  'fish-prawn-crab': 'portrait',
+  'interview-hell': 'portrait',
+  'hotpot-battle': 'portrait',
+  'typhoon-commute': 'portrait',
+  'bargaining-master': 'portrait',
+  'k1945': 'portrait',
+  'game2048': 'portrait',
+  'hextris': 'portrait',
+  'clumsybird': 'portrait',
+  'snowling': 'portrait',
+  'snowball': 'portrait',
+  'spherecollider': 'portrait',
+  'seapusher': 'portrait',
+  'tuxpusher': 'portrait',
+
+  // Landscape games
+  'doom': 'landscape',
+  'wolf3d': 'landscape',
+  'porydrive': 'landscape',
+  'snowboarder': 'landscape',
+  'cubes2': 'landscape',
+  'spaceminer': 'landscape',
+  'tuxocide': 'landscape',
+  'tuxscape': 'landscape',
+  'tuxvsdragon': 'landscape',
+  'seriousshooter': 'landscape',
+  'browserquest': 'landscape',
+  'adarkroom': 'landscape',
+  'gaiamaker': 'landscape'
 };
 
 export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
   const router = useRouter();
   const { gameId } = router.query;
+  const orientation = GAME_ORIENTATIONS[gameId] || 'portrait';
   const [game, setGame] = useState(null);
 
   // Live leaderboard state for gameplay engagement
@@ -335,7 +374,7 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
 
         {/* CONTAINER HOLDING SANDBOX IFRAME & LEADERBOARD/CONTROLS */}
         <div className="play-grid">
-          <div className="play-container-wrapper">
+          <div className={`play-container-wrapper ${orientation}-frame`}>
             <UniversalGameWrapper
               gameUrl={game.url}
               gameId={game.id}
