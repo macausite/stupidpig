@@ -27,7 +27,7 @@ This file contains custom workspace rules and guidelines for developer agents wo
 
 1. **Production Deployment**:
    - Always run the sitemap generator (`npm run build` or `node scripts/generate-sitemap.js`) before compiling.
-   - Deploy to production using the Firebase CLI command: `npx firebase deploy --only hosting`.
+   - Deploy to production using the Firebase CLI command: `npx firebase deploy --only hosting`. This deploys changes directly to the default project **`stupidpig`** (mapped in `.firebaserc`).
 2. **GitHub Sync**:
    - Keep the workspace in sync by committing and pushing all updates to the remote GitHub repository.
 3. **Local Testing & Selenium Environment**:
