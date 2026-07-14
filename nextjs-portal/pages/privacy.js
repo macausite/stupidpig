@@ -7,7 +7,23 @@ export default function PrivacyPolicy() {
     <div className="portal-shell">
       <Head>
         <title>私隱政策 (Privacy Policy) - StupidPig.com</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="StupidPig 傻豬摸魚遊戲網的私隱政策。我們承諾並重視您的個人隱私、遊戲進度存檔與數據安全。" />
+        <link rel="canonical" href="https://stupidpig.com/privacy" />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐷</text></svg>" />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="私隱政策 (Privacy Policy) - StupidPig.com" />
+        <meta property="og:description" content="StupidPig 傻豬摸魚遊戲網的私隱政策。我們承諾並重視您的個人隱私、遊戲進度存檔與數據安全。" />
+        <meta property="og:url" content="https://stupidpig.com/privacy" />
+        <meta property="og:site_name" content="StupidPig 傻豬遊戲網" />
+        <meta property="og:image" content="https://stupidpig.com/game-screenshots/stupidpig-escape.png" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="私隱政策 (Privacy Policy) - StupidPig.com" />
+        <meta name="twitter:description" content="StupidPig 傻豬摸魚遊戲網的私隱政策。我們承諾並重視您的個人隱私、遊戲進度存檔與數據安全。" />
+        <meta name="twitter:image" content="https://stupidpig.com/game-screenshots/stupidpig-escape.png" />
       </Head>
 
       <nav className="portal-nav">

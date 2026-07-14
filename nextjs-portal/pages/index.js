@@ -10,9 +10,51 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
     <div className="portal-shell">
       <Head>
         <title>StupidPig - 傻豬摸魚遊戲網 (StupidPig.com)</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="description" content="StupidPig 傻豬遊戲網 - 專為大灣區、香港同澳門打工仔打造嘅摸魚遊戲平台！" />
+        <meta name="description" content="StupidPig 傻豬遊戲網 - 專為大灣區、香港同澳門打工仔打造嘅免下載網頁摸魚遊戲平台！即點即玩，支援一秒切換 Excel 報表掩護，安全扮工摸魚無難度！" />
+        <meta name="keywords" content="StupidPig, 傻豬遊戲網, 摸魚遊戲, 扮工摸魚, 網頁遊戲, 免下載遊戲, 香港摸魚, 澳門摸魚, 大灣區, 網頁免下載, Office Slacking Games, Web Games" />
+        <link rel="canonical" href="https://stupidpig.com" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐷</text></svg>" />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="StupidPig - 傻豬摸魚遊戲網 (StupidPig.com)" />
+        <meta property="og:description" content="專為大灣區、香港同澳門打工仔打造嘅免下載網頁摸魚遊戲平台！即點即玩，支援一秒切換 Excel 報表掩護，安全扮工摸魚無難度！" />
+        <meta property="og:url" content="https://stupidpig.com" />
+        <meta property="og:site_name" content="StupidPig 傻豬遊戲網" />
+        <meta property="og:image" content="https://stupidpig.com/game-screenshots/stupidpig-escape.png" />
+        <meta property="og:locale" content="zh_HK" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="StupidPig - 傻豬摸魚遊戲網 (StupidPig.com)" />
+        <meta name="twitter:description" content="專為大灣區、香港同澳門打工仔打造嘅免下載網頁摸魚遊戲平台！即點即玩，支援一秒切換 Excel 報表掩護，安全扮工摸魚無難度！" />
+        <meta name="twitter:image" content="https://stupidpig.com/game-screenshots/stupidpig-escape.png" />
+
+        {/* Schema.org Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              "name": "StupidPig - 傻豬摸魚遊戲網",
+              "description": "專為大灣區、香港同澳門打工仔打造嘅免下載網頁摸魚遊戲平台！即點即玩，支援一秒切換 Excel 報表掩護，安全扮工摸魚無難度！",
+              "url": "https://stupidpig.com",
+              "publisher": {
+                "@type": "Organization",
+                "name": "StupidPig",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://stupidpig.com/favicon.ico"
+                }
+              },
+              "about": {
+                "@type": "Thing",
+                "name": "摸魚遊戲 (Office Slacking Games)"
+              }
+            })
+          }}
+        />
       </Head>
 
       {/* HEADER NAVIGATION */}
@@ -63,7 +105,7 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
 
         <div className="dashboard-layout">
           {/* LEFT AREA: GAME SHEETS */}
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', minWidth: 0 }}>
             <div className="category-filters">
               {[
                 { id: 'all', label: '📂 全部遊戲' },
@@ -87,10 +129,33 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
         </div>
       </main>
 
-      {/* FOOTER */}
       <footer style={{ borderTop: '1px solid var(--border-color)', padding: '24px', textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
         <p>© 2026 StupidPig.com 傻豬遊戲網. All rights reserved.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '6px' }}>
+        <p style={{ marginTop: '6px', opacity: 0.85 }}>
+          合作夥伴：<a href="https://macausite.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500' }}>macausite.com 多媒體 (Macausite Multimedia)</a>
+        </p>
+        
+        {/* Category cross links map */}
+        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', opacity: 0.8 }}>
+          <strong>摸魚分類目錄：</strong>
+          {[
+            { id: 'hyper_casual', label: '扮工摸魚' },
+            { id: 'puzzle', label: '燒腦智力' },
+            { id: 'arcade', label: '懷舊街機' },
+            { id: 'open_source', label: '開源精選' }
+          ].map((cat, i, arr) => (
+            <React.Fragment key={cat.id}>
+              <Link href={`/category/${cat.id}`} legacyBehavior>
+                <a style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500', cursor: 'pointer' }}>
+                  {cat.label}
+                </a>
+              </Link>
+              {i < arr.length - 1 && <span style={{ color: 'var(--border-color)' }}>•</span>}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '14px' }}>
           <Link href="/privacy" legacyBehavior>
             <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>私隱政策</a>
           </Link>

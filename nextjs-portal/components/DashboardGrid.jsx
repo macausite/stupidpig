@@ -262,7 +262,7 @@ const getGameGradient = (gameId) => {
 };
 
 // Map game IDs to their screenshot image paths (in /public/game-screenshots/)
-const GAME_SCREENSHOTS = {
+export const GAME_SCREENSHOTS = {
   'stupidpig-escape': '/game-screenshots/stupidpig-escape.png',
   'villain-hitting': '/game-screenshots/villain-hitting.png',
   'temple-chim': '/game-screenshots/temple-chim.png',

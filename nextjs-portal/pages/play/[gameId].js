@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { UniversalGameWrapper } from '../../components/GameWrapper';
-import { gamesData } from '../../components/DashboardGrid';
+import { gamesData, GAME_SCREENSHOTS } from '../../components/DashboardGrid';
 
 const CONTROLS_MAP = {
   doom: '【W/A/S/D 或 方向鍵】移動 | 【Space/Ctrl】開槍 | 【1-9】換武器',
@@ -71,11 +71,21 @@ const GAME_ORIENTATIONS = {
   'gaiamaker': 'landscape'
 };
 
-export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
+export default function PlayPage({ gameData, onUpdateCoins, onUpdatePoints }) {
   const router = useRouter();
   const { gameId } = router.query;
   const orientation = GAME_ORIENTATIONS[gameId] || 'portrait';
-  const [game, setGame] = useState(null);
+
+  // Initialize state synchronously with build-time/SSR gameData if available
+  const [game, setGame] = useState(() => {
+    if (!gameData) return null;
+    const url = gameData.externalUrl || (gameData.id === 'merge' ? 'racing' : gameData.id);
+    const gameUrl = gameData.externalUrl ? gameData.externalUrl : `http://127.0.0.1:3005/?game=${url}`;
+    return {
+      ...gameData,
+      url: gameUrl
+    };
+  });
 
   // Live leaderboard state for gameplay engagement
   const [leaderboard, setLeaderboard] = useState([
@@ -86,26 +96,17 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
     { name: '5. 菠蘿油殺手', score: 3800 }
   ]);
 
+  // Keep state in sync with props changes
   useEffect(() => {
-    if (gameId) {
-      const found = gamesData.find(g => g.id === gameId);
-      if (found) {
-        if (found.externalUrl) {
-          setGame({
-            ...found,
-            url: found.externalUrl
-          });
-        } else {
-          const queryParam = gameId === 'merge' ? 'racing' : gameId;
-          const gameUrl = `http://127.0.0.1:3005/?game=${queryParam}`;
-          setGame({
-            ...found,
-            url: gameUrl
-          });
-        }
-      }
+    if (gameData) {
+      const url = gameData.externalUrl || (gameData.id === 'merge' ? 'racing' : gameData.id);
+      const gameUrl = gameData.externalUrl ? gameData.externalUrl : `http://127.0.0.1:3005/?game=${url}`;
+      setGame({
+        ...gameData,
+        url: gameUrl
+      });
     }
-  }, [gameId]);
+  }, [gameData]);
 
   const handleScoreSubmitted = (payload) => {
     // Update global state
@@ -140,8 +141,49 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
     return (
       <div className="portal-shell">
         <Head>
-          <title>{game.name} - StupidPig Portal</title>
+          <title>{`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`}</title>
+          <meta name="description" content={`${game.name} - ${game.desc} | 免下載網頁遊戲、即點即玩，支持一鍵 Excel 扮工隱藏！`} />
+          <link rel="canonical" href={`https://stupidpig.com/play/${game.id}`} />
           <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐷</text></svg>" />
+
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content={`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`} />
+          <meta property="og:description" content={game.desc} />
+          <meta property="og:url" content={`https://stupidpig.com/play/${game.id}`} />
+          <meta property="og:site_name" content="StupidPig 傻豬遊戲網" />
+          <meta property="og:image" content={`https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`} />
+          <meta property="og:locale" content="zh_HK" />
+
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`} />
+          <meta name="twitter:description" content={game.desc} />
+          <meta name="twitter:image" content={`https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`} />
+
+          {/* Schema.org Structured Data */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "VideoGame",
+                "name": game.name,
+                "description": game.desc,
+                "genre": game.category === "hyper_casual" ? "Casual Game" : game.category === "puzzle" ? "Puzzle Game" : "Arcade Game",
+                "playMode": "SinglePlayer",
+                "applicationCategory": "GameApplication",
+                "operatingSystem": "Windows, macOS, Linux, iOS, Android",
+                "url": `https://stupidpig.com/play/${game.id}`,
+                "image": `https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`,
+                "screenshot": `https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`,
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "StupidPig"
+                }
+              })
+            }}
+          />
         </Head>
 
         <nav className="portal-nav">
@@ -339,8 +381,49 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
   return (
     <div className="portal-shell">
       <Head>
-        <title>Playing - {game.name}</title>
+        <title>{`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`}</title>
+        <meta name="description" content={`${game.name} - ${game.desc} | 免下載網頁遊戲、即點即玩，支持一鍵 Excel 扮工隱藏！`} />
+        <link rel="canonical" href={`https://stupidpig.com/play/${game.id}`} />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐷</text></svg>" />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`} />
+        <meta property="og:description" content={game.desc} />
+        <meta property="og:url" content={`https://stupidpig.com/play/${game.id}`} />
+        <meta property="og:site_name" content="StupidPig 傻豬遊戲網" />
+        <meta property="og:image" content={`https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`} />
+        <meta property="og:locale" content="zh_HK" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${game.name} - 傻豬摸魚遊戲網 (StupidPig.com)`} />
+        <meta name="twitter:description" content={game.desc} />
+        <meta name="twitter:image" content={`https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`} />
+
+        {/* Schema.org Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "VideoGame",
+              "name": game.name,
+              "description": game.desc,
+              "genre": game.category === "hyper_casual" ? "Casual Game" : game.category === "puzzle" ? "Puzzle Game" : "Arcade Game",
+              "playMode": "SinglePlayer",
+              "applicationCategory": "GameApplication",
+              "operatingSystem": "Windows, macOS, Linux, iOS, Android",
+              "url": `https://stupidpig.com/play/${game.id}`,
+              "image": `https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`,
+              "screenshot": `https://stupidpig.com${GAME_SCREENSHOTS[game.id] || '/game-screenshots/stupidpig-escape.png'}`,
+              "publisher": {
+                "@type": "Organization",
+                "name": "StupidPig"
+              }
+            })
+          }}
+        />
       </Head>
 
       <nav className="portal-nav">
@@ -358,9 +441,9 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
       <main className="play-layout">
         <div className="play-header">
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '0' }}>
               {game.emoji} {game.name}
-            </h2>
+            </h1>
             <p style={{ fontSize: '0.8rem', color: '#8c89ad' }}>
               類別: {game.category === 'hyper_casual' ? '休閒益智' : '開源精品'} | 引擎: WebGL/Emscripten
             </p>
@@ -373,8 +456,8 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
         </div>
 
         {/* CONTAINER HOLDING SANDBOX IFRAME & LEADERBOARD/CONTROLS */}
-        <div className="play-grid">
-          <div className={`play-container-wrapper ${orientation}-frame`}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0 }}>
+          <div className={`play-container-wrapper ${orientation}-frame`} style={{ flex: 1, minHeight: '550px' }}>
             <UniversalGameWrapper
               gameUrl={game.url}
               gameId={game.id}
@@ -383,64 +466,26 @@ export default function PlayPage({ onUpdateCoins, onUpdatePoints }) {
             />
           </div>
 
-          {/* SIDEBAR PANEL */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* LEADERBOARD CARD */}
-            <div className="panel-card" style={{ flex: '1', display: 'flex', flexDirection: 'column', padding: '16px' }}>
-              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', color: '#ffb300' }}>
-                🏆 當局排行榜 (Leaderboard)
-              </h3>
-              <p style={{ fontSize: '0.75rem', color: '#8c89ad', marginBottom: '12px' }}>
-                同同區摸魚玩家一較高下，挑戰最高極限！
-              </p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                {leaderboard.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 12px',
-                      backgroundColor: item.name.includes('你') ? 'rgba(0, 113, 227, 0.25)' : '#161527',
-                      border: item.name.includes('你') ? '1px solid #0071e3' : '1px solid #23223f',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      color: item.name.includes('你') ? '#6bb5ff' : '#ffffff',
-                      fontWeight: item.name.includes('你') ? 'bold' : 'normal'
-                    }}
-                  >
-                    <span>{item.name}</span>
-                    <span style={{ fontFamily: 'monospace', color: '#00ff66', fontWeight: 'bold' }}>
-                      {item.score.toLocaleString()} 分
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* CONTROLS CARD */}
-            <div className="panel-card" style={{ padding: '16px' }}>
-              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', color: '#00d8ff' }}>
-                🎮 遊戲操作指南
-              </h3>
-              <p style={{ fontSize: '0.75rem', color: '#8c89ad', marginBottom: '8px' }}>
-                支持鍵盤與滑鼠流暢操作：
-              </p>
-              <div
-                style={{
-                  backgroundColor: '#161527',
-                  border: '1px solid #23223f',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  lineHeight: '1.5',
-                  color: '#ffffff'
-                }}
-              >
-                {controlsText}
-              </div>
+          {/* CONTROLS CARD */}
+          <div className="panel-card" style={{ padding: '20px' }}>
+            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.05rem', color: '#00d8ff', marginTop: 0, marginBottom: '8px' }}>
+              🎮 遊戲操作指南 (Controls Guide)
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#8c89ad', marginBottom: '10px' }}>
+              支持鍵盤與滑鼠流暢操作：
+            </p>
+            <div
+              style={{
+                backgroundColor: '#161527',
+                border: '1px solid #23223f',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                lineHeight: '1.6',
+                color: '#ffffff'
+              }}
+            >
+              {controlsText}
             </div>
           </div>
         </div>
@@ -456,6 +501,12 @@ export async function getStaticPaths() {
   return { paths, fallback: false };
 }
 
-export async function getStaticProps() {
-  return { props: {} };
+export async function getStaticProps({ params }) {
+  const { gameId } = params;
+  const gameData = gamesData.find(g => g.id === gameId) || null;
+  return {
+    props: {
+      gameData
+    }
+  };
 }

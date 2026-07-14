@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev -p 3010",
+    "prebuild": "node scripts/generate-sitemap.js",
     "build": "next build",
     "start": "next start"
   },
