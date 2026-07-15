@@ -134,28 +134,7 @@ export default function Home({ userCoins, userPoints, onUpdateCoins }) {
         <p style={{ marginTop: '6px', opacity: 0.85 }}>
           合作夥伴：<a href="https://macausite.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500' }}>macausite.com 多媒體 (Macausite Multimedia)</a>
         </p>
-        
-        {/* Category cross links map */}
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', opacity: 0.8 }}>
-          <strong>摸魚分類目錄：</strong>
-          {[
-            { id: 'hyper_casual', label: '扮工摸魚' },
-            { id: 'puzzle', label: '燒腦智力' },
-            { id: 'arcade', label: '懷舊街機' },
-            { id: 'open_source', label: '開源精選' }
-          ].map((cat, i, arr) => (
-            <React.Fragment key={cat.id}>
-              <Link href={`/category/${cat.id}`} legacyBehavior>
-                <a style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500', cursor: 'pointer' }}>
-                  {cat.label}
-                </a>
-              </Link>
-              {i < arr.length - 1 && <span style={{ color: 'var(--border-color)' }}>•</span>}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '10px' }}>
           <Link href="/privacy" legacyBehavior>
             <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>私隱政策</a>
           </Link>

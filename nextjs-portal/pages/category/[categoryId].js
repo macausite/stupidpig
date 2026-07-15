@@ -175,23 +175,7 @@ export default function CategoryPage({ categoryId, category, userCoins, userPoin
         <p style={{ marginTop: '6px', opacity: 0.85 }}>
           合作夥伴：<a href="https://macausite.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500' }}>macausite.com 多媒體 (Macausite Multimedia)</a>
         </p>
-        
-        {/* Category cross links map */}
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', opacity: 0.8 }}>
-          <strong>摸魚分類目錄：</strong>
-          {Object.keys(CATEGORIES_DATA).map((catKey, i) => (
-            <React.Fragment key={catKey}>
-              <Link href={`/category/${catKey}`} legacyBehavior>
-                <a style={{ color: '#0071e3', textDecoration: 'none', fontWeight: '500', cursor: 'pointer' }}>
-                  {CATEGORIES_DATA[catKey].label.split(' ')[1]}
-                </a>
-              </Link>
-              {i < Object.keys(CATEGORIES_DATA).length - 1 && <span style={{ color: 'var(--border-color)' }}>•</span>}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '10px' }}>
           <Link href="/privacy" legacyBehavior>
             <a style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>私隱政策</a>
           </Link>
