@@ -206,6 +206,15 @@ export const gamesData = [
     desc: 'mrbid 原創開源 3D 企鵝反擊戰！控制企鵝喺旋轉平台上面消滅所有來襲嘅恐龍！',
     externalUrl: '/games/tuxocide/index.html',
     sourceUrl: 'https://github.com/mrbid/Tuxocide'
+  },
+  {
+    id: 'cs-tactical',
+    name: 'CS Tactical Web Shooter',
+    category: 'arcade',
+    emoji: '🔫',
+    desc: '完全純代碼生成嘅 Counter-Strike 風格 3D 第一人稱射擊遊戲！購買武器，擊殺敵人！',
+    externalUrl: '/games/cs-tactical/index.html',
+    sourceUrl: 'https://github.com/macausite/stupidpig'
   }
 ];
 
@@ -256,7 +265,8 @@ const getGameGradient = (gameId) => {
     tuxocide: 'linear-gradient(180deg, #fcf6f4 0%, #f5e2dc 100%)',    // Soft Peach Orange
     aigeneratedgame: 'linear-gradient(180deg, #f4fcfc 0%, #dcfafa 100%)', // Mint Cyan
     tuxvsdragon: 'linear-gradient(180deg, #fbf4f4 0%, #f1dcdc 100%)', // Delicate Clay Crimson
-    k1945: 'linear-gradient(180deg, #f4f9fc 0%, #dcecf5 100%)'        // Soft Slate Blue
+    k1945: 'linear-gradient(180deg, #f4f9fc 0%, #dcecf5 100%)',       // Soft Slate Blue
+    'cs-tactical': 'linear-gradient(180deg, #f4fcfc 0%, #dcfafa 100%)' // Mint Cyan
   };
   return gradients[gameId] || 'linear-gradient(180deg, #f5f5f7 0%, #e8e8ed 100%)';
 };
@@ -313,6 +323,7 @@ export const GAME_SCREENSHOTS = {
   porydrive:      '/game-screenshots/porydrive.jpg',
   tuxscape:       '/game-screenshots/tuxscape.jpg',
   tuxocide:       '/game-screenshots/tuxocide.jpg',
+  'cs-tactical':  '/game-screenshots/cs-tactical.jpg',
 };
 
 function GameCardVisual({ gameId, emoji, gameBadge, catLabel, isDownloadOnly }) {
