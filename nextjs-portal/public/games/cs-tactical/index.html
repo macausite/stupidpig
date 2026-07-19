@@ -183,10 +183,10 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 // --- LIGHTING ---
-const ambientLight = new THREE.AmbientLight(0x222233, 0.6);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xaaccff, 0.4);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.position.set(50, 100, 50);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.width = 2048;
@@ -373,14 +373,21 @@ document.addEventListener('mousemove', (e) => {
 });
 
 function lockPointer() {
-    if (STATE.health > 0 && !STATE.buyMenuOpen) document.body.requestPointerLock();
+    if (STATE.health > 0 && !STATE.buyMenuOpen) {
+        if (document.body.requestPointerLock) {
+            document.body.requestPointerLock();
+        }
+    }
 }
 
-btnStart.addEventListener('click', () => {
+startMenu.addEventListener('click', () => {
+    STATE.isRunning = true;
     startMenu.classList.add('hidden');
     lockPointer();
 });
+
 btnResume.addEventListener('click', () => {
+    STATE.isRunning = true;
     pauseMenu.classList.add('hidden');
     lockPointer();
 });
