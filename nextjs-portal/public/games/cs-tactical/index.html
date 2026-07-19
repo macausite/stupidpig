@@ -488,9 +488,9 @@ function createHitParticles(pos, color) {
     for(let i=0; i<5; i++) {
         const p = new THREE.Mesh(pGeo, pMat);
         p.position.copy(pos);
-        p.velocity = new THREE.Vector3((Math.random()-0.5)*5, Math.random()*5, (Math.random()-0.5)*5);
+        const vel = new THREE.Vector3((Math.random()-0.5)*5, Math.random()*5, (Math.random()-0.5)*5);
         scene.add(p);
-        particles.push({mesh: p, life: 1.0});
+        particles.push({mesh: p, velocity: vel, life: 1.0});
     }
 }
 const particles = [];
