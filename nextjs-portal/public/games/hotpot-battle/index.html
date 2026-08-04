@@ -2,14 +2,16 @@
 <html lang="zh-HK">
 <head>
 	<meta charset="utf-8">
-	<title>地獄黑仔王: 打邊爐搶食戰 (Hot Pot Chopstick Battle)</title>
+	<title>港式打邊爐爭霸 3D (Hong Kong Hotpot Battle 3D)</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<!-- Three.js CDN -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<style>
 		:root {
-			--neon-pink: #ff2a85;
-			--neon-blue: #00f0ff;
+			--neon-red: #ff3333;
+			--neon-orange: #ff9900;
 			--gold: #ffd700;
-			--bg-dark: #07050a;
+			--bg-dark: #09060c;
 		}
 
 		* {
@@ -33,13 +35,13 @@
 		#game-container {
 			position: relative;
 			width: 100%;
-			max-width: 800px;
+			max-width: 1000px;
 			height: 100%;
-			max-height: 600px;
-			background-color: #0b0914;
-			border: 2px solid rgba(255, 42, 133, 0.4);
+			max-height: 700px;
+			background-color: #060408;
+			border: 2px solid rgba(255, 153, 0, 0.4);
 			border-radius: 12px;
-			box-shadow: 0 0 35px rgba(255, 42, 133, 0.15);
+			box-shadow: 0 0 35px rgba(255, 153, 0, 0.2);
 			overflow: hidden;
 		}
 
@@ -47,10 +49,9 @@
 			width: 100%;
 			height: 100%;
 			display: block;
-			cursor: none; /* Hide cursor to show chopsticks */
 		}
 
-		/* HUD stats overlay */
+		/* HUD Panel */
 		.hud-panel {
 			position: absolute;
 			top: 15px;
@@ -64,212 +65,138 @@
 		}
 
 		.hud-card {
-			background: rgba(11, 9, 20, 0.85);
-			border: 1px solid rgba(255, 42, 133, 0.35);
+			background: rgba(12, 8, 16, 0.85);
+			border: 1px solid rgba(255, 153, 0, 0.4);
 			border-radius: 8px;
 			padding: 8px 16px;
 			color: #fff;
 			font-size: 0.9rem;
 			pointer-events: auto;
-			backdrop-filter: blur(5px);
-			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+			backdrop-filter: blur(8px);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 		}
 
 		.score-label {
 			color: var(--gold);
 			font-weight: bold;
-			font-size: 1.25rem;
+			font-size: 1.3rem;
 			font-family: monospace;
 		}
 
-		/* Float alerts */
-		.control-hint {
+		/* Popup Floating Indicator */
+		.popup-notice {
 			position: absolute;
-			bottom: 15px;
+			top: 50%;
 			left: 50%;
-			transform: translateX(-50%);
-			background: rgba(11, 9, 20, 0.8);
-			border: 1px solid rgba(255, 255, 255, 0.15);
-			padding: 6px 16px;
-			border-radius: 20px;
-			color: #aaa;
-			font-size: 0.75rem;
-			pointer-events: none;
-			z-index: 10;
-		}
-
-		/* End overlay */
-		.game-over-overlay {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: rgba(8, 6, 12, 0.9);
-			display: none;
-			flex-direction: column;
-			justify-content: center;
-			align-items: center;
-			color: #fff;
-			z-index: 100;
-			text-align: center;
-		}
-
-		.game-btn {
-			background: linear-gradient(180deg, #ff2a85 0%, #a3004d 100%);
-			color: #fff;
-			border: none;
-			padding: 10px 24px;
-			border-radius: 8px;
+			transform: translate(-50%, -50%) scale(0.8);
+			font-size: 2rem;
 			font-weight: bold;
-			cursor: pointer;
-			transition: all 0.2s;
-			box-shadow: 0 4px 12px rgba(255, 42, 133, 0.3);
-			margin-top: 12px;
+			color: var(--gold);
+			text-shadow: 0 0 15px rgba(255,215,0,0.8);
+			pointer-events: none;
+			opacity: 0;
+			transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			z-index: 30;
+		}
+
+		.popup-notice.show {
+			opacity: 1;
+			transform: translate(-50%, -60%) scale(1.1);
 		}
 
 		/* Excel Camouflage */
 		#camo-overlay {
 			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background-color: #f3f2f1;
-			z-index: 1000;
+			top: 0; left: 0; width: 100%; height: 100%;
+			background: #ffffff;
+			z-index: 999;
 			display: none;
 			flex-direction: column;
+			color: #000;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			color: #323130;
 		}
 
 		.excel-titlebar {
-			background-color: #107c41;
-			color: white;
-			padding: 8px 16px;
+			background: #107c41;
+			color: #fff;
+			padding: 6px 12px;
+			font-size: 0.85rem;
 			display: flex;
 			justify-content: space-between;
-			align-items: center;
-			font-size: 0.85rem;
-			font-weight: 600;
 		}
 
 		.excel-toolbar {
-			background-color: #f3f2f1;
+			background: #f3f2f1;
 			border-bottom: 1px solid #e1dfdd;
-			padding: 6px 16px;
-			display: flex;
-			gap: 20px;
-			font-size: 0.8rem;
+			padding: 8px 12px;
+			display: flex; gap: 15px; font-size: 0.85rem;
 		}
 
 		.excel-grid-container {
-			flex: 1;
-			overflow: auto;
+			flex: 1; overflow: auto; padding: 10px;
 		}
 
 		.excel-table {
-			border-collapse: collapse;
-			background-color: white;
-			width: 100%;
+			border-collapse: collapse; width: 100%; font-size: 0.85rem;
 		}
 
 		.excel-table th, .excel-table td {
-			border: 1px solid #d2d0ce;
-			padding: 6px 12px;
-			font-size: 0.8rem;
+			border: 1px solid #d2d0ce; padding: 6px 12px; text-align: left;
 		}
 
-		.excel-table th {
-			background-color: #f3f2f1;
-			font-weight: normal;
-			color: #323130;
-		}
-
-		.excel-cell-header {
-			background-color: #f3f2f1;
-			text-align: center;
-			color: #505050;
-			width: 40px;
-		}
+		.excel-table th { background: #f3f2f1; }
 	</style>
 </head>
 <body>
+
 	<div id="game-container">
 		<canvas id="game-canvas"></canvas>
 
-		<!-- HUD Stats -->
+		<!-- HUD Header -->
 		<div class="hud-panel">
 			<div class="hud-card">
-				<div>🥩 打邊爐搶食戰</div>
-				<div style="margin-top: 4px;">飽食度: <span class="score-label" id="score-val">0</span></div>
+				<div>得分 (Score): <span class="score-label" id="score-val">0</span> 🍲</div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">按空白鍵 (Space) 可開啟扮工掩護</div>
 			</div>
-			<div class="hud-card" style="text-align: right;">
-				<div>剩餘時間: <span class="score-label" id="time-val" style="color: var(--neon-pink);">60s</span></div>
-				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			<div class="hud-card">
+				<div>連擊 Combo: <span class="score-label" id="combo-val" style="color: var(--neon-orange);">0x</span></div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">點擊湯鍋中「剛熟金黃」的食材！</div>
 			</div>
 		</div>
 
-		<div class="control-hint">點擊滑鼠/輕觸屏幕搶食 (Click/Tap to grab)</div>
-
-		<!-- Game Over screen -->
-		<div class="game-over-overlay" id="end-overlay">
-			<h2 style="font-size: 2.2rem; color: var(--gold); margin-bottom: 10px;">🍲 搶食宴會結束！</h2>
-			<p style="font-size: 1.1rem; color: #aaa; margin-bottom: 15px;" id="end-desc">總飽食度: 0 點</p>
-			<button class="game-btn" id="restart-btn">再吃一鍋 (Eat Again)</button>
-		</div>
+		<!-- Popup Floating Notice -->
+		<div class="popup-notice" id="popup-notice">完美搶食！+500</div>
 
 		<!-- Excel Camouflage -->
 		<div id="camo-overlay">
 			<div class="excel-titlebar">
-				<span>Microsoft Excel - HotPot_Dining_Calories_Log.xlsx</span>
+				<span>Microsoft Excel - Hotpot_Calorie_Audit_2026.xlsx</span>
 				<span>[扮工中 - 按空白鍵返回遊戲]</span>
 			</div>
 			<div class="excel-toolbar">
 				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
-				<span>常用</span>
-				<span>熱量分析</span>
-				<span>飲食日誌</span>
+				<span>常用</span> <span>食材卡路里</span> <span>搶食統計</span>
 			</div>
 			<div class="excel-grid-container">
 				<table class="excel-table">
 					<thead>
 						<tr>
-							<th></th>
-							<th>A (食物品項)</th>
-							<th>B (烹煮耗時)</th>
-							<th>C (熱量 kcal)</th>
-							<th>D (累計飽食得分)</th>
+							<th></th> <th>A (食材名稱)</th> <th>B (最佳熟度時間)</th> <th>C (單份熱量)</th> <th>D (搶食得分)</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr>
-							<td class="excel-cell-header">1</td>
-							<td style="font-weight: bold;">家庭聚餐打邊爐熱量核算</td>
-							<td></td>
-							<td></td>
-							<td></td>
+							<td style="background: #f3f2f1; font-weight: bold; text-align: center;">1</td>
+							<td>極品和牛片</td> <td>8 秒 (七成熟)</td> <td>180 kcal</td>
+							<td id="excel-score-val" style="font-weight: bold; color: #107c41;">0</td>
 						</tr>
 						<tr>
-							<td class="excel-cell-header">2</td>
-							<td>手切肥牛</td>
-							<td>3s</td>
-							<td>250</td>
-							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
+							<td style="background: #f3f2f1; font-weight: bold; text-align: center;">2</td>
+							<td>彈牙手打墨魚丸</td> <td>15 秒 (全熟)</td> <td>120 kcal</td> <td></td>
 						</tr>
 						<tr>
-							<td class="excel-cell-header">3</td>
-							<td>手打牛丸</td>
-							<td>5s</td>
-							<td>180</td>
-							<td></td>
-						</tr>
-						<tr>
-							<td class="excel-cell-header">4</td>
-							<td>香甜粟米</td>
-							<td>6s</td>
-							<td>90</td>
-							<td></td>
+							<td style="background: #f3f2f1; font-weight: bold; text-align: center;">3</td>
+							<td>響鈴炸響鈴捲</td> <td>3 秒 (黃金三秒)</td> <td>220 kcal</td> <td></td>
 						</tr>
 					</tbody>
 				</table>
@@ -278,7 +205,7 @@
 	</div>
 
 	<script>
-		// Audio Synthesis
+		// --- Web Audio Synthesizer ---
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
 		let audioCtx = null;
 
@@ -293,503 +220,249 @@
 				if (!audioCtx) return;
 				const now = audioCtx.currentTime;
 
-				if (type === 'bubble') {
-					// Soft bubbling water sound
+				if (type === 'grab') {
 					const osc = audioCtx.createOscillator();
 					osc.type = 'sine';
-					osc.frequency.setValueAtTime(150 + Math.random() * 80, now);
-					osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-
+					osc.frequency.setValueAtTime(600, now);
+					osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
 					const gain = audioCtx.createGain();
-					gain.gain.setValueAtTime(0.06, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
-					osc.connect(gain);
-					gain.connect(audioCtx.destination);
-					osc.start(now);
-					osc.stop(now + 0.15);
-				} else if (type === 'grab') {
-					// Chopstick snap/clack
-					const osc = audioCtx.createOscillator();
-					osc.type = 'triangle';
-					osc.frequency.setValueAtTime(400, now);
-					osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
-
-					const gain = audioCtx.createGain();
-					gain.gain.setValueAtTime(0.2, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-
-					osc.connect(gain);
-					gain.connect(audioCtx.destination);
-					osc.start(now);
-					osc.stop(now + 0.05);
-				} else if (type === 'perfect') {
-					// Ding chime
-					const osc = audioCtx.createOscillator();
-					osc.type = 'sine';
-					osc.frequency.setValueAtTime(880, now);
-					osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
-
-					const gain = audioCtx.createGain();
-					gain.gain.setValueAtTime(0.18, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-					osc.connect(gain);
-					gain.connect(audioCtx.destination);
-					osc.start(now);
-					osc.stop(now + 0.3);
-				} else if (type === 'raw') {
-					// Buzz
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.1);
+				} else if (type === 'miss') {
 					const osc = audioCtx.createOscillator();
 					osc.type = 'sawtooth';
-					osc.frequency.setValueAtTime(120, now);
-
+					osc.frequency.setValueAtTime(160, now);
+					osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
 					const gain = audioCtx.createGain();
 					gain.gain.setValueAtTime(0.2, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-					osc.connect(gain);
-					gain.connect(audioCtx.destination);
-					osc.start(now);
-					osc.stop(now + 0.2);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.25);
 				}
-			} catch(e) {
-				console.warn(e);
-			}
+			} catch(e) {}
 		}
 
 		// Game State
-		let score = 0;
-		let timeLeft = 60;
-		let isPlaying = true;
-		let isCamouflage = false;
+		const STATE = {
+			score: 0,
+			combo: 0
+		};
 
-		let mouseX = 400;
-		let mouseY = 300;
+		const scoreValEl = document.getElementById('score-val');
+		const comboValEl = document.getElementById('combo-val');
+		const excelScoreValEl = document.getElementById('excel-score-val');
+		const popupNotice = document.getElementById('popup-notice');
 
-		let foodItems = [];
-		let particles = [];
-		let textFloats = [];
-
-		// Opponent AI chopsticks list
-		let aiChopsticks = [];
-
-		const FOOD_TYPES = [
-			{ name: '肥牛', emoji: '🥩', cookTime: 180, points: 150 },
-			{ name: '魚蛋', emoji: '🍡', cookTime: 300, points: 100 },
-			{ name: '冬菇', emoji: '🍄', cookTime: 480, points: 200 }
-		];
-
-		const canvas = document.getElementById('game-canvas');
-		const ctx = canvas.getContext('2d');
-
-		function resizeCanvas() {
-			const container = document.getElementById('game-container');
-			canvas.width = container.clientWidth;
-			canvas.height = container.clientHeight;
-		}
-		window.addEventListener('resize', resizeCanvas);
-		resizeCanvas();
-
-		const scoreVal = document.getElementById('score-val');
-		const timeVal = document.getElementById('time-val');
-		const endOverlay = document.getElementById('end-overlay');
-		const endDesc = document.getElementById('end-desc');
-		const restartBtn = document.getElementById('restart-btn');
-
-		const camoOverlay = document.getElementById('camo-overlay');
-		const excelScoreVal = document.getElementById('excel-score-val');
-
-		function spawnFood() {
-			if (foodItems.length < 5) {
-				const type = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
-				// Spawn inside hotpot circle bounds
-				const potRadius = 150;
-				const angle = Math.random() * Math.PI * 2;
-				const dist = Math.random() * (potRadius - 30);
-
-				foodItems.push({
-					name: type.name,
-					emoji: type.emoji,
-					maxTime: type.cookTime,
-					points: type.points,
-					cookProgress: 0,
-					x: canvas.width * 0.5 + Math.cos(angle) * dist,
-					y: canvas.height * 0.5 + Math.sin(angle) * dist,
-					vx: (Math.random() - 0.5) * 0.8,
-					vy: (Math.random() - 0.5) * 0.8,
-					radius: 18
-				});
-			}
+		function updateHUD() {
+			scoreValEl.innerText = STATE.score;
+			excelScoreValEl.innerText = STATE.score;
+			comboValEl.innerText = STATE.combo + 'x';
 		}
 
-		function spawnTextFloat(text, x, y, color = '#fff') {
-			textFloats.push({
-				text: text,
-				x: x,
-				y: y,
-				vy: -1.2,
-				alpha: 1.0,
-				life: 60,
-				color: color
-			});
+		function showPopup(text, success) {
+			popupNotice.innerText = text;
+			popupNotice.style.color = success ? 'var(--gold)' : '#ff5555';
+			popupNotice.classList.add('show');
+			setTimeout(() => popupNotice.classList.remove('show'), 1000);
 		}
 
-		function grabFood() {
-			if (!isPlaying || isCamouflage) return;
-			playSound('grab');
-
-			// Find closest food to cursor
-			let grabbedIndex = -1;
-			let minDist = 40;
-
-			foodItems.forEach((f, idx) => {
-				const dx = mouseX - f.x;
-				const dy = mouseY - f.y;
-				const dist = Math.sqrt(dx*dx + dy*dy);
-				if (dist < minDist) {
-					minDist = dist;
-					grabbedIndex = idx;
-				}
-			});
-
-			if (grabbedIndex !== -1) {
-				const f = foodItems[grabbedIndex];
-				const pct = f.cookProgress / f.maxTime;
-
-				if (pct >= 0.85 && pct <= 1.15) {
-					// Perfectly cooked!
-					score += f.points;
-					playSound('perfect');
-					spawnTextFloat(`正！+${f.points}`, f.x, f.y - 20, '#00ff66');
-				} else if (pct < 0.85) {
-					// Raw
-					score = Math.max(0, score - 50);
-					playSound('raw');
-					spawnTextFloat("生㗎！-50", f.x, f.y - 20, '#ff3333');
-				} else {
-					// Overcooked/burnt
-					score = Math.max(0, score - 20);
-					playSound('raw');
-					spawnTextFloat("煮爛咗！-20", f.x, f.y - 20, '#8c89ad');
-				}
-
-				scoreVal.textContent = score;
-				excelScoreVal.textContent = score;
-				submitScoreToParent(score);
-
-				foodItems.splice(grabbedIndex, 1);
-			}
-		}
-
-		function triggerOpponentAI() {
-			// CPU periodically grabs a cooked food item
-			if (foodItems.length === 0 || Math.random() > 0.08) return;
-
-			// Find a perfectly cooked food item
-			const targets = foodItems.filter(f => {
-				const pct = f.cookProgress / f.maxTime;
-				return pct >= 0.9 && pct <= 1.1;
-			});
-
-			if (targets.length > 0) {
-				const target = targets[0];
-				// Spawn opponent chopsticks animation
-				aiChopsticks.push({
-					targetX: target.x,
-					targetY: target.y,
-					x: target.x + (Math.random() > 0.5 ? 200 : -200),
-					y: target.y - 200,
-					progress: 0,
-					itemRef: target
-				});
-			}
-		}
-
-		function updateAIChopsticks() {
-			for (let i = aiChopsticks.length - 1; i >= 0; i--) {
-				const chop = aiChopsticks[i];
-				chop.progress += 0.05;
-
-				// Move towards target
-				if (chop.progress < 0.5) {
-					chop.x += (chop.targetX - chop.x) * 0.15;
-					chop.y += (chop.targetY - chop.y) * 0.15;
-				} else if (chop.progress >= 0.5 && chop.progress < 0.55) {
-					// Snatch item
-					const idx = foodItems.indexOf(chop.itemRef);
-					if (idx !== -1) {
-						foodItems.splice(idx, 1);
-						playSound('grab');
-						spawnTextFloat("被搶走！(Stolen!)", chop.targetX, chop.targetY - 20, '#ff3333');
-					}
-				} else {
-					// Retract
-					chop.y -= 15;
-					chop.x += 5;
-				}
-
-				if (chop.progress >= 1.0) {
-					aiChopsticks.splice(i, 1);
-				}
-			}
-		}
-
-		function drawAIChopsticks(ctx) {
-			aiChopsticks.forEach(chop => {
-				ctx.save();
-				ctx.strokeStyle = '#b32424'; // Red CPU chopsticks
-				ctx.lineWidth = 5;
-
-				// Draw pair of chopsticks
-				ctx.beginPath();
-				ctx.moveTo(chop.x - 4, chop.y - 120);
-				ctx.lineTo(chop.x, chop.y);
-				ctx.stroke();
-
-				ctx.beginPath();
-				ctx.moveTo(chop.x + 8, chop.y - 120);
-				ctx.lineTo(chop.x, chop.y);
-				ctx.stroke();
-
-				ctx.restore();
-			});
-		}
-
-		function drawHotPot(ctx) {
-			// Wooden round table
-			ctx.fillStyle = '#170f0f';
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-			// Altar metal circle ring for pot
-			const potX = canvas.width * 0.5;
-			const potY = canvas.height * 0.5;
-			const potRadius = 160;
-
-			ctx.fillStyle = '#3a0c0c';
-			ctx.strokeStyle = '#c62828';
-			ctx.lineWidth = 8;
-			ctx.beginPath();
-			ctx.arc(potX, potY, potRadius, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-
-			// Split divider (Yin Yang style)
-			ctx.strokeStyle = '#5a1212';
-			ctx.lineWidth = 4;
-			ctx.beginPath();
-			ctx.moveTo(potX - potRadius, potY);
-			ctx.bezierCurveTo(potX - 60, potY - 60, potX + 60, potY + 60, potX + potRadius, potY);
-			ctx.stroke();
-
-			// Bubbling particles inside broth
-			if (Math.random() < 0.2) {
-				playSound('bubble');
-			}
-
-			// Draw steam/bubble circles
-			ctx.fillStyle = 'rgba(255, 87, 34, 0.25)';
-			for (let i = 0; i < 6; i++) {
-				const angle = Math.random() * Math.PI * 2;
-				const dist = Math.random() * (potRadius - 20);
-				ctx.beginPath();
-				ctx.arc(potX + Math.cos(angle) * dist, potY + Math.sin(angle) * dist, 4 + Math.random() * 8, 0, Math.PI * 2);
-				ctx.fill();
-			}
-		}
-
-		function drawFood(ctx) {
-			foodItems.forEach(f => {
-				// Heat progression color ring
-				const pct = f.cookProgress / f.maxTime;
-				let progressColor = '#ff3333'; // Raw red
-				if (pct >= 0.85 && pct <= 1.15) {
-					progressColor = '#00ff66'; // Cooked green
-				} else if (pct > 1.15) {
-					progressColor = '#505050'; // Overcooked grey
-				}
-
-				ctx.save();
-				// Progress outer ring
-				ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-				ctx.lineWidth = 4;
-				ctx.beginPath();
-				ctx.arc(f.x, f.y, f.radius + 6, 0, Math.PI * 2);
-				ctx.stroke();
-
-				// Cooked filled slice arc
-				ctx.strokeStyle = progressColor;
-				ctx.beginPath();
-				ctx.arc(f.x, f.y, f.radius + 6, -Math.PI * 0.5, -Math.PI * 0.5 + Math.min(1.0, pct) * Math.PI * 2);
-				ctx.stroke();
-
-				// Emoji shape
-				ctx.font = '24px sans-serif';
-				ctx.textAlign = 'center';
-				ctx.fillText(f.emoji, f.x, f.y + 8);
-				ctx.restore();
-			});
-		}
-
-		function drawPlayerChopsticks(ctx) {
-			ctx.save();
-			// User chopsticks (beige bamboo look)
-			ctx.strokeStyle = '#eedcb3';
-			ctx.lineWidth = 5;
-
-			// Draw a pair of chopsticks aiming at mouseX, mouseY
-			ctx.beginPath();
-			ctx.moveTo(mouseX - 5, mouseY - 140);
-			ctx.lineTo(mouseX, mouseY);
-			ctx.stroke();
-
-			ctx.beginPath();
-			ctx.moveTo(mouseX + 12, mouseY - 140);
-			ctx.lineTo(mouseX, mouseY);
-			ctx.stroke();
-
-			ctx.restore();
-		}
-
-		function updateParticles() {
-			for (let i = textFloats.length - 1; i >= 0; i--) {
-				const t = textFloats[i];
-				t.y += t.vy;
-				t.life--;
-				if (t.life <= 0) {
-					textFloats.splice(i, 1);
-				}
-			}
-		}
-
-		function drawParticles(ctx) {
-			ctx.textAlign = 'center';
-			textFloats.forEach(t => {
-				ctx.save();
-				ctx.globalAlpha = Math.min(1.0, t.life / 20);
-				ctx.fillStyle = t.color;
-				ctx.font = 'bold 15px sans-serif';
-				ctx.fillText(t.text, t.x, t.y);
-				ctx.restore();
-			});
-		}
-
-		function gameLoop() {
-			if (isPlaying && !isCamouflage) {
-				spawnFood();
-				triggerOpponentAI();
-				updateAIChopsticks();
-
-				// Update cook timers
-				foodItems.forEach(f => {
-					f.cookProgress++;
-					// Drift float
-					f.x += f.vx;
-					f.y += f.vy;
-
-					// Stay inside pot circle bounds
-					const potX = canvas.width * 0.5;
-					const potY = canvas.height * 0.5;
-					const dx = f.x - potX;
-					const dy = f.y - potY;
-					const dist = Math.sqrt(dx*dx + dy*dy);
-					if (dist > 135) {
-						f.vx *= -1;
-						f.vy *= -1;
-						f.x += f.vx * 2;
-						f.y += f.vy * 2;
-					}
-				});
-			}
-
-			updateParticles();
-
-			drawHotPot(ctx);
-			drawFood(ctx);
-			drawAIChopsticks(ctx);
-			drawPlayerChopsticks(ctx);
-			drawParticles(ctx);
-
-			requestAnimationFrame(gameLoop);
-		}
-
-		// Cursor tracker
-		canvas.addEventListener('mousemove', (e) => {
-			const rect = canvas.getBoundingClientRect();
-			mouseX = e.clientX - rect.left;
-			mouseY = e.clientY - rect.top;
-		});
-
-		canvas.addEventListener('mousedown', (e) => {
-			e.stopPropagation();
-			grabFood();
-		});
-
-		// Mobile compatibility touch tracking
-		canvas.addEventListener('touchstart', (e) => {
-			e.preventDefault();
-			const rect = canvas.getBoundingClientRect();
-			const t = e.touches[0];
-			mouseX = t.clientX - rect.left;
-			mouseY = t.clientY - rect.top;
-			grabFood();
-		});
-
-		canvas.addEventListener('touchmove', (e) => {
-			const rect = canvas.getBoundingClientRect();
-			const t = e.touches[0];
-			mouseX = t.clientX - rect.left;
-			mouseY = t.clientY - rect.top;
-		});
-
-		// Timer loop
-		const interval = setInterval(() => {
-			if (isPlaying && !isCamouflage) {
-				timeLeft--;
-				timeVal.textContent = `${timeLeft}s`;
-
-				if (timeLeft <= 0) {
-					isPlaying = false;
-					clearInterval(interval);
-					endOverlay.style.display = 'flex';
-					endDesc.textContent = `總飽食度: ${score} 點`;
-					submitScoreToParent(score);
-				}
-			}
-		}, 1000);
-
-		restartBtn.addEventListener('click', () => {
-			location.reload();
-		});
-
-		function submitScoreToParent(finalScore) {
-			if (window.parent && window.parent !== window) {
-				window.parent.postMessage({
-					type: 'STUPIDPIG_SCORE_UPDATED',
-					gameId: 'hotpot-battle',
-					score: finalScore
-				}, '*');
-			}
-		}
-
-		function toggleCamouflage() {
-			isCamouflage = !isCamouflage;
-			if (isCamouflage) {
-				camoOverlay.style.display = 'flex';
-			} else {
-				camoOverlay.style.display = 'none';
-			}
-		}
-
+		// Boss Key (Spacebar)
+		let isCamo = false;
 		window.addEventListener('keydown', (e) => {
 			if (e.code === 'Space') {
 				e.preventDefault();
-				toggleCamouflage();
+				isCamo = !isCamo;
+				document.getElementById('camo-overlay').style.display = isCamo ? 'flex' : 'none';
 			}
 		});
 
-		// Start
-		gameLoop();
+		// --- Three.js 3D Engine Setup ---
+		const container = document.getElementById('game-container');
+		const canvas = document.getElementById('game-canvas');
+
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(0x060408);
+		scene.fog = new THREE.FogExp2(0x060408, 0.035);
+
+		const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+		camera.position.set(0, 3.5, 3.2);
+		camera.lookAt(0, 0, 0);
+
+		const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+		renderer.setSize(container.clientWidth, container.clientHeight);
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+		window.addEventListener('resize', () => {
+			const w = container.clientWidth;
+			const h = container.clientHeight;
+			camera.aspect = w / h;
+			camera.updateProjectionMatrix();
+			renderer.setSize(w, h);
+		});
+
+		// Lighting
+		const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+		scene.add(ambient);
+
+		const warmLight = new THREE.PointLight(0xffaa44, 2.5, 12);
+		warmLight.position.set(0, 4, 0);
+		scene.add(warmLight);
+
+		// --- Wooden Dining Table ---
+		const tableGeo = new THREE.BoxGeometry(5, 0.2, 5);
+		const tableMat = new THREE.MeshStandardMaterial({ color: 0x3a2012, roughness: 0.7 });
+		const tableMesh = new THREE.Mesh(tableGeo, tableMat);
+		tableMesh.position.y = -0.1;
+		scene.add(tableMesh);
+
+		// --- 3D Split Hotpot (鴛鴦鍋) ---
+		const potOuterGeo = new THREE.CylinderGeometry(1.6, 1.4, 0.6, 32);
+		const potMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 });
+		const potOuter = new THREE.Mesh(potOuterGeo, potMat);
+		potOuter.position.y = 0.3;
+		scene.add(potOuter);
+
+		// Spicy Soup (Red)
+		const soupRedGeo = new THREE.CircleGeometry(1.5, 32, 0, Math.PI);
+		const soupRedMat = new THREE.MeshBasicMaterial({ color: 0xd90429, side: THREE.DoubleSide });
+		const soupRed = new THREE.Mesh(soupRedGeo, soupRedMat);
+		soupRed.rotation.x = Math.PI / 2;
+		soupRed.position.set(0, 0.55, 0);
+		scene.add(soupRed);
+
+		// Clear Soup (White/Clear)
+		const soupClearGeo = new THREE.CircleGeometry(1.5, 32, Math.PI, Math.PI);
+		const soupClearMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0, side: THREE.DoubleSide });
+		const soupClear = new THREE.Mesh(soupClearGeo, soupClearMat);
+		soupClear.rotation.x = Math.PI / 2;
+		soupClear.position.set(0, 0.55, 0);
+		scene.add(soupClear);
+
+		// Divider
+		const divGeo = new THREE.BoxGeometry(3.0, 0.65, 0.08);
+		const divider = new THREE.Mesh(divGeo, potMat);
+		divider.position.y = 0.35;
+		scene.add(divider);
+
+		// --- Food Ingredients Class ---
+		const FOOD_TYPES = [
+			{ name: '和牛片 🥩', colorRaw: 0xff4d6d, colorPerfect: 0x9e2a2b, colorBurnt: 0x2b1e1e, points: 500, cookTime: 4 },
+			{ name: '墨魚丸 🍡', colorRaw: 0xf8f9fa, colorPerfect: 0xffd166, colorBurnt: 0x544747, points: 300, cookTime: 6 },
+			{ name: '響鈴捲 🥟', colorRaw: 0xffee8c, colorPerfect: 0xf4a261, colorBurnt: 0x3d2817, points: 400, cookTime: 2.5 }
+		];
+
+		const activeFoodList = [];
+
+		function spawnFood() {
+			if (activeFoodList.length >= 8) return;
+
+			const type = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
+			const geo = new THREE.DodecahedronGeometry(0.18, 1);
+			const mat = new THREE.MeshStandardMaterial({ color: type.colorRaw, roughness: 0.4 });
+			const mesh = new THREE.Mesh(geo, mat);
+
+			// Random position inside pot circle
+			const angle = Math.random() * Math.PI * 2;
+			const radius = 0.3 + Math.random() * 1.0;
+			mesh.position.set(Math.cos(angle) * radius, 0.58, Math.sin(angle) * radius);
+
+			scene.add(mesh);
+
+			activeFoodList.push({
+				mesh: mesh,
+				type: type,
+				cookProgress: 0, // 0 (Raw) -> 1 (Perfect) -> 2 (Burnt)
+				state: 'RAW' // RAW, PERFECT, BURNT
+			});
+		}
+
+		// Raycasting to Grab Food
+		const raycaster = new THREE.Raycaster();
+		const mouse = new THREE.Vector2();
+
+		function onPointerDown(e) {
+			const rect = container.getBoundingClientRect();
+			mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+			mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+			raycaster.setFromCamera(mouse, camera);
+			const intersects = raycaster.intersectObjects(activeFoodList.map(f => f.mesh));
+
+			if (intersects.length > 0) {
+				const hitMesh = intersects[0].object;
+				const foodIdx = activeFoodList.findIndex(f => f.mesh === hitMesh);
+
+				if (foodIdx >= 0) {
+					const food = activeFoodList[foodIdx];
+
+					if (food.state === 'PERFECT') {
+						STATE.combo++;
+						const pts = food.type.points * Math.min(5, STATE.combo);
+						STATE.score += pts;
+						playSound('grab');
+						showPopup(`搶到 ${food.type.name}！+${pts}`, true);
+					} else if (food.state === 'RAW') {
+						STATE.combo = 0;
+						playSound('miss');
+						showPopup('尚未熟透！(Raw)', false);
+					} else { // BURNT
+						STATE.combo = 0;
+						playSound('miss');
+						showPopup('煮糊了！(Burnt)', false);
+					}
+
+					scene.remove(food.mesh);
+					activeFoodList.splice(foodIdx, 1);
+					updateHUD();
+				}
+			}
+		}
+
+		container.addEventListener('mousedown', onPointerDown);
+
+		// --- Main Game Animation Loop ---
+		const clock = new THREE.Clock();
+
+		function animate() {
+			requestAnimationFrame(animate);
+			const delta = Math.min(clock.getDelta(), 0.1);
+
+			// Spawn items
+			if (Math.random() < 0.03) spawnFood();
+
+			// Update Food Cooking Status & Color Tint
+			for (let i = activeFoodList.length - 1; i >= 0; i--) {
+				const f = activeFoodList[i];
+				f.cookProgress += (delta / f.type.cookTime);
+
+				// Bobbing in boiling soup
+				f.mesh.position.y = 0.58 + Math.sin(clock.getElapsedTime() * 6 + i) * 0.03;
+				f.mesh.rotation.y += 0.5 * delta;
+
+				if (f.cookProgress < 0.7) {
+					f.state = 'RAW';
+					f.mesh.material.color.setHex(f.type.colorRaw);
+				} else if (f.cookProgress >= 0.7 && f.cookProgress <= 1.4) {
+					f.state = 'PERFECT';
+					f.mesh.material.color.setHex(f.type.colorPerfect);
+				} else if (f.cookProgress > 1.4 && f.cookProgress <= 2.2) {
+					f.state = 'BURNT';
+					f.mesh.material.color.setHex(f.type.colorBurnt);
+				} else {
+					// Disappear burnt food
+					scene.remove(f.mesh);
+					activeFoodList.splice(i, 1);
+				}
+			}
+
+			renderer.render(scene, camera);
+		}
+
+		animate();
+		updateHUD();
+
 	</script>
 </body>
 </html>

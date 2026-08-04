@@ -2,14 +2,16 @@
 <html lang="zh-HK">
 <head>
 	<meta charset="utf-8">
-	<title>街頭魚蝦蟹 (Street Corner Fish-Prawn-Crab)</title>
+	<title>街頭魚蝦蟹 3D (Street Corner Fish-Prawn-Crab 3D)</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<!-- Three.js CDN -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<style>
 		:root {
 			--gold: #ffd700;
-			--neon-blue: #00e5ff;
-			--temple-red: #801a1a;
-			--board-bg: #e2cca2;
+			--neon-red: #ff3366;
+			--neon-blue: #00f0ff;
+			--bg-dark: #08050e;
 		}
 
 		* {
@@ -24,7 +26,7 @@
 			width: 100%;
 			height: 100%;
 			overflow: hidden;
-			background-color: #07050a;
+			background-color: var(--bg-dark);
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -33,13 +35,13 @@
 		#game-container {
 			position: relative;
 			width: 100%;
-			max-width: 800px;
+			max-width: 1000px;
 			height: 100%;
-			max-height: 600px;
-			background-color: #0d0912;
-			border: 2px solid rgba(255, 215, 0, 0.35);
+			max-height: 700px;
+			background-color: #06040a;
+			border: 2px solid rgba(255, 215, 0, 0.4);
 			border-radius: 12px;
-			box-shadow: 0 0 35px rgba(255, 215, 0, 0.15);
+			box-shadow: 0 0 35px rgba(255, 215, 0, 0.2);
 			overflow: hidden;
 		}
 
@@ -49,7 +51,7 @@
 			display: block;
 		}
 
-		/* HUD and Panel cards */
+		/* HUD Panel */
 		.hud-panel {
 			position: absolute;
 			top: 15px;
@@ -63,88 +65,28 @@
 		}
 
 		.hud-card {
-			background: rgba(13, 9, 18, 0.85);
+			background: rgba(13, 8, 20, 0.85);
 			border: 1px solid rgba(255, 215, 0, 0.35);
 			border-radius: 8px;
 			padding: 8px 16px;
 			color: #fff;
 			font-size: 0.9rem;
 			pointer-events: auto;
-			backdrop-filter: blur(5px);
-			box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+			backdrop-filter: blur(8px);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 		}
 
 		.score-label {
 			color: var(--gold);
 			font-weight: bold;
-			font-size: 1.25rem;
+			font-size: 1.3rem;
 			font-family: monospace;
-			text-shadow: 0 0 5px rgba(255,215,0,0.3);
 		}
 
-		/* Play Cardboard Mat Board */
-		.mat-board {
+		/* Bottom Control & Betting UI */
+		.control-bar {
 			position: absolute;
-			bottom: 120px;
-			left: 15px;
-			right: 15px;
-			height: 240px;
-			background: var(--board-bg);
-			border: 8px double #8a3324;
-			border-radius: 8px;
-			display: grid;
-			grid-template-columns: repeat(3, 1fr);
-			grid-template-rows: repeat(2, 1fr);
-			gap: 4px;
-			padding: 4px;
-			box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-			z-index: 10;
-		}
-
-		.mat-tile {
-			border: 2px dashed #8a3324;
-			background-color: rgba(255, 255, 255, 0.25);
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-			align-items: center;
-			cursor: pointer;
-			transition: all 0.2s;
-			position: relative;
-		}
-
-		.mat-tile:hover {
-			background-color: rgba(255, 255, 255, 0.55);
-		}
-
-		.tile-emoji {
-			font-size: 2.2rem;
-		}
-
-		.tile-name {
-			font-size: 0.85rem;
-			font-weight: bold;
-			color: #4d1c14;
-			margin-top: 2px;
-		}
-
-		.tile-bet-badge {
-			position: absolute;
-			top: 5px;
-			right: 5px;
-			background-color: #8a3324;
-			color: #fff;
-			font-size: 0.75rem;
-			font-weight: bold;
-			padding: 2px 6px;
-			border-radius: 10px;
-			display: none;
-		}
-
-		/* Bottom Control buttons */
-		.control-panel {
-			position: absolute;
-			bottom: 20px;
+			bottom: 15px;
 			left: 15px;
 			right: 15px;
 			display: flex;
@@ -153,26 +95,96 @@
 			z-index: 20;
 		}
 
-		.game-btn {
-			background: linear-gradient(180deg, #8a3324 0%, #4d1c14 100%);
-			color: #fff;
+		.chip-selector {
+			display: flex;
+			gap: 10px;
+			background: rgba(0,0,0,0.6);
+			padding: 6px 12px;
+			border-radius: 20px;
 			border: 1px solid rgba(255,255,255,0.15);
-			padding: 12px 20px;
+		}
+
+		.chip-btn {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			border: 2px solid #fff;
+			color: #fff;
+			font-weight: bold;
+			font-size: 0.8rem;
+			cursor: pointer;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			transition: all 0.2s;
+			box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+		}
+
+		.chip-btn.active {
+			transform: scale(1.15);
+			border-color: var(--gold);
+			box-shadow: 0 0 12px var(--gold);
+		}
+
+		.action-btn {
+			background: linear-gradient(180deg, #ffd700 0%, #b38600 100%);
+			color: #000;
+			border: 1px solid rgba(255,255,255,0.3);
+			padding: 12px 24px;
 			border-radius: 8px;
 			font-weight: bold;
+			font-size: 1.05rem;
 			cursor: pointer;
 			transition: all 0.2s;
-			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+			box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
 		}
 
-		.game-btn:hover {
-			transform: scale(1.02);
-			background: linear-gradient(180deg, #aa4434 0%, #66271c 100%);
+		.action-btn:hover {
+			transform: scale(1.05);
+			box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
 		}
 
-		.game-btn:disabled {
+		.action-btn:disabled {
 			opacity: 0.5;
 			cursor: not-allowed;
+			transform: none;
+		}
+
+		/* Result Announcement Banner */
+		.result-banner {
+			position: absolute;
+			top: 30%;
+			left: 50%;
+			transform: translate(-50%, -50%) scale(0.8);
+			background: rgba(8, 5, 14, 0.92);
+			border: 3px solid var(--gold);
+			border-radius: 16px;
+			padding: 20px 40px;
+			text-align: center;
+			color: #fff;
+			z-index: 50;
+			opacity: 0;
+			pointer-events: none;
+			transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			box-shadow: 0 0 35px rgba(255, 215, 0, 0.4);
+		}
+
+		.result-banner.show {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1);
+		}
+
+		.result-title {
+			font-size: 2.2rem;
+			font-weight: bold;
+			color: var(--gold);
+			margin-bottom: 6px;
+			text-shadow: 0 0 12px var(--gold);
+		}
+
+		.result-dice-icons {
+			font-size: 2.5rem;
+			margin: 10px 0;
 		}
 
 		/* Excel Camouflage */
@@ -182,175 +194,163 @@
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background-color: #f3f2f1;
-			z-index: 1000;
+			background: #ffffff;
+			z-index: 999;
 			display: none;
 			flex-direction: column;
+			color: #000;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			color: #323130;
 		}
 
 		.excel-titlebar {
-			background-color: #107c41;
-			color: white;
-			padding: 8px 16px;
+			background: #107c41;
+			color: #fff;
+			padding: 6px 12px;
+			font-size: 0.85rem;
 			display: flex;
 			justify-content: space-between;
-			align-items: center;
-			font-size: 0.85rem;
-			font-weight: 600;
 		}
 
 		.excel-toolbar {
-			background-color: #f3f2f1;
+			background: #f3f2f1;
 			border-bottom: 1px solid #e1dfdd;
-			padding: 6px 16px;
+			padding: 8px 12px;
 			display: flex;
-			gap: 20px;
-			font-size: 0.8rem;
+			gap: 15px;
+			font-size: 0.85rem;
 		}
 
 		.excel-grid-container {
 			flex: 1;
 			overflow: auto;
+			padding: 10px;
 		}
 
 		.excel-table {
 			border-collapse: collapse;
-			background-color: white;
 			width: 100%;
+			font-size: 0.85rem;
 		}
 
 		.excel-table th, .excel-table td {
 			border: 1px solid #d2d0ce;
 			padding: 6px 12px;
-			font-size: 0.8rem;
+			text-align: left;
 		}
 
 		.excel-table th {
-			background-color: #f3f2f1;
-			font-weight: normal;
-			color: #323130;
+			background: #f3f2f1;
 		}
 
 		.excel-cell-header {
-			background-color: #f3f2f1;
-			text-align: center;
-			color: #505050;
-			width: 40px;
+			background: #f3f2f1;
+			font-weight: bold;
+			width: 35px;
+			text-align: center !important;
 		}
 	</style>
 </head>
 <body>
+
 	<div id="game-container">
 		<canvas id="game-canvas"></canvas>
 
-		<!-- HUD panel overlay -->
+		<!-- HUD Header -->
 		<div class="hud-panel">
 			<div class="hud-card">
-				<div>🎲 街頭魚蝦蟹</div>
-				<div style="margin-top: 4px;">本金: <span class="score-label" id="score-val">1000</span></div>
+				<div>籌碼 (Balance): <span class="score-label" id="balance-count">5000</span> 🪙</div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">按空白鍵 (Space) 可開啟扮工掩護</div>
 			</div>
-			<div class="hud-card" style="text-align: right;">
-				<div id="game-state-label" style="font-weight: bold; color: var(--gold);">點擊木格子下注 (Bet)</div>
-				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
-			</div>
-		</div>
-
-		<!-- Cardboard betting mat -->
-		<div class="mat-board">
-			<div class="mat-tile" data-symbol="0">
-				<div class="tile-emoji">🐟</div>
-				<div class="tile-name">魚 (Fish)</div>
-				<div class="tile-bet-badge" id="bet-0">0</div>
-			</div>
-			<div class="mat-tile" data-symbol="1">
-				<div class="tile-emoji">🦐</div>
-				<div class="tile-name">蝦 (Prawn)</div>
-				<div class="tile-bet-badge" id="bet-1">0</div>
-			</div>
-			<div class="mat-tile" data-symbol="2">
-				<div class="tile-emoji">🦀</div>
-				<div class="tile-name">蟹 (Crab)</div>
-				<div class="tile-bet-badge" id="bet-2">0</div>
-			</div>
-			<div class="mat-tile" data-symbol="3">
-				<div class="tile-emoji">🐓</div>
-				<div class="tile-name">雞 (Rooster)</div>
-				<div class="tile-bet-badge" id="bet-3">0</div>
-			</div>
-			<div class="mat-tile" data-symbol="4">
-				<div class="tile-emoji">葫</div>
-				<div class="tile-name">葫蘆 (Gourd)</div>
-				<div class="tile-bet-badge" id="bet-4">0</div>
-			</div>
-			<div class="mat-tile" data-symbol="5">
-				<div class="tile-emoji">🦌</div>
-				<div class="tile-name">鹿 (Stag)</div>
-				<div class="tile-bet-badge" id="bet-5">0</div>
+			<div class="hud-card">
+				<div>目前總下注: <span class="score-label" id="total-bet-count" style="color: var(--neon-blue);">0</span> 🪙</div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">點擊檯面圖案進行下注</div>
 			</div>
 		</div>
 
-		<!-- Bottom controls panel -->
-		<div class="control-panel">
-			<button class="game-btn" id="clear-btn" style="background: #2b1f3d;">
-				🧹 清空下注 (Clear)
-			</button>
-			<button class="game-btn" id="shake-btn" style="background: linear-gradient(180deg, #ffd700 0%, #b89200 100%); color:#000; text-shadow:none;">
-				🎲 搖起骰盅 (Shake)
-			</button>
+		<!-- Result Banner -->
+		<div class="result-banner" id="result-banner">
+			<div class="result-title" id="result-title">開骰結果</div>
+			<div class="result-dice-icons" id="result-dice-icons">🐟 🦐 🦀</div>
+			<div style="font-size: 1.1rem; color: #ddd;" id="result-desc">贏得 1500 籌碼！</div>
+		</div>
+
+		<!-- Control Bar -->
+		<div class="control-bar">
+			<div class="chip-selector">
+				<div class="chip-btn active" style="background: #e63946;" onclick="selectChip(100)">100</div>
+				<div class="chip-btn" style="background: #457b9d;" onclick="selectChip(500)">500</div>
+				<div class="chip-btn" style="background: #2a9d8f;" onclick="selectChip(1000)">1000</div>
+			</div>
+			<div style="display: flex; gap: 10px;">
+				<button class="action-btn" style="background: #555; color: #fff;" onclick="clearBets()">清除下注</button>
+				<button class="action-btn" id="roll-btn" onclick="startRoll()">🎲 搖骰開局</button>
+			</div>
 		</div>
 
 		<!-- Excel Camouflage -->
 		<div id="camo-overlay">
 			<div class="excel-titlebar">
-				<span>Microsoft Excel - StupidPig_Betting_Margin_Audit.xlsx</span>
+				<span>Microsoft Excel - FishPrawnCrab_Probability_Audit_2026.xlsx</span>
 				<span>[扮工中 - 按空白鍵返回遊戲]</span>
 			</div>
 			<div class="excel-toolbar">
 				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
 				<span>常用</span>
-				<span>模擬數據</span>
-				<span>盈虧精算</span>
+				<span>常用公式</span>
+				<span>下注精算</span>
 			</div>
 			<div class="excel-grid-container">
 				<table class="excel-table">
 					<thead>
 						<tr>
 							<th></th>
-							<th>A (下注符號)</th>
-							<th>B (本金盈餘)</th>
-							<th>C (下注額)</th>
-							<th>D (勝率分析)</th>
+							<th>A (圖案標籤)</th>
+							<th>B (出現率)</th>
+							<th>C (賠率)</th>
+							<th>D (累計盈虧)</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr>
 							<td class="excel-cell-header">1</td>
-							<td style="font-weight: bold;">魚蝦蟹概率精算日誌</td>
-							<td></td>
-							<td></td>
-							<td></td>
+							<td>魚 (Fish)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
+							<td id="excel-bal-val" style="font-weight: bold; color: #107c41;">5000</td>
 						</tr>
 						<tr>
 							<td class="excel-cell-header">2</td>
-							<td>全體總額</td>
-							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">1000</td>
-							<td>100</td>
-							<td>16.6%</td>
+							<td>蝦 (Prawn)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
+							<td></td>
 						</tr>
 						<tr>
 							<td class="excel-cell-header">3</td>
-							<td>魚</td>
-							<td></td>
-							<td></td>
+							<td>蟹 (Crab)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
 							<td></td>
 						</tr>
 						<tr>
 							<td class="excel-cell-header">4</td>
-							<td>蝦</td>
+							<td>金錢 (Coin)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
 							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">5</td>
+							<td>葫蘆 (Gourd)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
 							<td></td>
+						</tr>
+						<tr>
+							<td class="excel-cell-header">6</td>
+							<td>雞 (Rooster)</td>
+							<td>42.1%</td>
+							<td>1:1 / 1:2 / 1:3</td>
 							<td></td>
 						</tr>
 					</tbody>
@@ -360,7 +360,7 @@
 	</div>
 
 	<script>
-		// Audio Synthesis
+		// --- Web Audio Synthesizer ---
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
 		let audioCtx = null;
 
@@ -375,485 +375,444 @@
 				if (!audioCtx) return;
 				const now = audioCtx.currentTime;
 
-				if (type === 'rattle') {
-					// Dice rattling clacks (wood clicks)
-					const count = 4;
-					for (let i = 0; i < count; i++) {
-						const clackTime = now + i * 0.06 + Math.random() * 0.02;
+				if (type === 'shake') {
+					for(let i=0; i<4; i++) {
 						const osc = audioCtx.createOscillator();
 						osc.type = 'triangle';
-						osc.frequency.setValueAtTime(450 + Math.random() * 200, clackTime);
-						osc.frequency.exponentialRampToValueAtTime(120, clackTime + 0.04);
-
+						osc.frequency.setValueAtTime(300 + Math.random()*200, now + i*0.08);
 						const gain = audioCtx.createGain();
-						gain.gain.setValueAtTime(0.2, clackTime);
-						gain.gain.exponentialRampToValueAtTime(0.001, clackTime + 0.04);
-
+						gain.gain.setValueAtTime(0.2, now + i*0.08);
+						gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.08 + 0.05);
 						osc.connect(gain);
 						gain.connect(audioCtx.destination);
-						osc.start(clackTime);
-						osc.stop(clackTime + 0.05);
+						osc.start(now + i*0.08);
+						osc.stop(now + i*0.08 + 0.05);
 					}
-				} else if (type === 'clatter') {
-					// Plate slamming on wooden table
+				} else if (type === 'chip') {
 					const osc = audioCtx.createOscillator();
-					osc.type = 'sawtooth';
-					osc.frequency.setValueAtTime(150, now);
-					osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
-
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(1200, now);
+					osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
 					const gain = audioCtx.createGain();
-					gain.gain.setValueAtTime(0.35, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 					osc.connect(gain);
 					gain.connect(audioCtx.destination);
 					osc.start(now);
-					osc.stop(now + 0.15);
+					osc.stop(now + 0.08);
 				} else if (type === 'win') {
-					// Happy coins clinking
-					for (let i = 0; i < 3; i++) {
-						const clinkTime = now + i * 0.1;
-						const osc = audioCtx.createOscillator();
-						osc.type = 'sine';
-						osc.frequency.setValueAtTime(1200 + Math.random() * 300, clinkTime);
-						const gain = audioCtx.createGain();
-						gain.gain.setValueAtTime(0.25, clinkTime);
-						gain.gain.exponentialRampToValueAtTime(0.001, clinkTime + 0.08);
-						osc.connect(gain);
-						gain.connect(audioCtx.destination);
-						osc.start(clinkTime);
-						osc.stop(clinkTime + 0.08);
-					}
+					const osc = audioCtx.createOscillator();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(523.25, now);
+					osc.frequency.setValueAtTime(659.25, now + 0.1);
+					osc.frequency.setValueAtTime(783.99, now + 0.2);
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.3, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.5);
+				} else if (type === 'lose') {
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(180, now);
+					osc.frequency.exponentialRampToValueAtTime(90, now + 0.3);
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.2, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+					osc.connect(gain);
+					gain.connect(audioCtx.destination);
+					osc.start(now);
+					osc.stop(now + 0.3);
 				}
-			} catch(e) {
-				console.warn(e);
-			}
+			} catch(e) {}
 		}
 
-		// Game state
-		let wallet = 1000;
-		let bets = [0, 0, 0, 0, 0, 0];
-		let totalBet = 0;
-		let gameState = 'betting'; // betting, shaking, thrown, revealed
-		let isCamouflage = false;
-
+		// --- Game Data & Betting State ---
 		const SYMBOLS = [
-			{ name: '魚 (Fish)', emoji: '🐟' },
-			{ name: '蝦 (Prawn)', emoji: '🦐' },
-			{ name: '蟹 (Crab)', emoji: '🦀' },
-			{ name: '雞 (Rooster)', emoji: '🐓' },
-			{ name: '葫蘆 (Gourd)', emoji: '葫' },
-			{ name: '鹿 (Stag)', emoji: '🦌' }
+			{ id: 0, name: '魚 (Fish)', icon: '🐟', color: '#ff3366' },
+			{ id: 1, name: '蝦 (Prawn)', icon: '🦐', color: '#00f0ff' },
+			{ id: 2, name: '蟹 (Crab)', icon: '🦀', color: '#ffd700' },
+			{ id: 3, name: '金錢 (Coin)', icon: '🪙', color: '#00cc66' },
+			{ id: 4, name: '葫蘆 (Gourd)', icon: '葫', color: '#ff9900' },
+			{ id: 5, name: '雞 (Rooster)', icon: '🐓', color: '#cc66ff' }
 		];
 
-		// Dice results
-		let rolledDice = [0, 1, 2];
+		const STATE = {
+			balance: 5000,
+			selectedChip: 100,
+			bets: [0, 0, 0, 0, 0, 0],
+			phase: 'BETTING' // BETTING, SHAKING, REVEALED
+		};
 
-		// Animation variables for porcelain bowl
-		let bowlX = 400;
-		let bowlY = 130;
-		let bowlAngle = 0;
-		let bowlOffset = { x: 0, y: 0 };
-		let bowlShakeTimer = 0;
-		let liftHeight = 0; // vertical lift animation for reveal
+		// UI Updates
+		const balanceEl = document.getElementById('balance-count');
+		const totalBetEl = document.getElementById('total-bet-count');
+		const excelBalEl = document.getElementById('excel-bal-val');
+		const rollBtn = document.getElementById('roll-btn');
+		const resultBanner = document.getElementById('result-banner');
+		const resultTitle = document.getElementById('result-title');
+		const resultDiceIcons = document.getElementById('result-dice-icons');
+		const resultDesc = document.getElementById('result-desc');
 
-		let particles = [];
-		let textFloats = [];
+		function updateHUD() {
+			balanceEl.innerText = STATE.balance;
+			excelBalEl.innerText = STATE.balance;
+			const totalBet = STATE.bets.reduce((a, b) => a + b, 0);
+			totalBetEl.innerText = totalBet;
+		}
 
+		window.selectChip = function(val) {
+			STATE.selectedChip = val;
+			document.querySelectorAll('.chip-btn').forEach(btn => {
+				btn.classList.toggle('active', btn.innerText == val);
+			});
+		};
+
+		window.clearBets = function() {
+			if (STATE.phase !== 'BETTING') return;
+			const totalBet = STATE.bets.reduce((a, b) => a + b, 0);
+			STATE.balance += totalBet;
+			STATE.bets = [0, 0, 0, 0, 0, 0];
+			updateHUD();
+			updateChipMeshes();
+		};
+
+		// Boss Key (Spacebar)
+		let isCamo = false;
+		window.addEventListener('keydown', (e) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				isCamo = !isCamo;
+				document.getElementById('camo-overlay').style.display = isCamo ? 'flex' : 'none';
+			}
+		});
+
+		// --- Three.js 3D Setup ---
+		const container = document.getElementById('game-container');
 		const canvas = document.getElementById('game-canvas');
-		const ctx = canvas.getContext('2d');
 
-		function resizeCanvas() {
-			const container = document.getElementById('game-container');
-			canvas.width = container.clientWidth;
-			canvas.height = container.clientHeight;
-			bowlX = canvas.width * 0.5;
-			bowlY = canvas.height * 0.22;
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(0x08050e);
+		scene.fog = new THREE.FogExp2(0x08050e, 0.04);
+
+		const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+		camera.position.set(0, 3.8, 3.8);
+		camera.lookAt(0, 0.2, -0.6);
+
+		const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+		renderer.setSize(container.clientWidth, container.clientHeight);
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+		window.addEventListener('resize', () => {
+			const w = container.clientWidth;
+			const h = container.clientHeight;
+			camera.aspect = w / h;
+			camera.updateProjectionMatrix();
+			renderer.setSize(w, h);
+		});
+
+		// Lighting
+		const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+		scene.add(ambient);
+
+		const dirLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+		dirLight.position.set(2, 6, 3);
+		dirLight.castShadow = true;
+		dirLight.shadow.mapSize.width = 1024;
+		dirLight.shadow.mapSize.height = 1024;
+		scene.add(dirLight);
+
+		const redLight = new THREE.PointLight(0xff3366, 2, 8);
+		redLight.position.set(-3, 2, -1);
+		scene.add(redLight);
+
+		// --- Felt Gambling Table ---
+		const boardCanvas = document.createElement('canvas');
+		boardCanvas.width = 1024;
+		boardCanvas.height = 1024;
+		const ctx = boardCanvas.getContext('2d');
+
+		function drawTableTexture() {
+			ctx.fillStyle = '#8b1e24'; // Red felt
+			ctx.fillRect(0, 0, 1024, 1024);
+
+			ctx.strokeStyle = '#ffd700';
+			ctx.lineWidth = 16;
+			ctx.strokeRect(20, 20, 984, 984);
+
+			// 6 Grid Tiles (2 rows x 3 cols)
+			const cols = 3, rows = 2;
+			const w = 300, h = 320;
+			const startX = 60, startY = 300;
+
+			SYMBOLS.forEach((sym, idx) => {
+				const r = Math.floor(idx / 3);
+				const c = idx % 3;
+				const x = startX + c * (w + 20);
+				const y = startY + r * (h + 20);
+
+				ctx.fillStyle = 'rgba(0,0,0,0.3)';
+				ctx.fillRect(x, y, w, h);
+
+				ctx.strokeStyle = '#ffd700';
+				ctx.lineWidth = 6;
+				ctx.strokeRect(x, y, w, h);
+
+				// Draw symbol icon & text
+				ctx.fillStyle = '#ffffff';
+				ctx.font = 'bold 80px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText(sym.icon, x + w/2, y + h/2);
+
+				ctx.font = 'bold 28px sans-serif';
+				ctx.fillStyle = sym.color;
+				ctx.fillText(sym.name, x + w/2, y + h - 25);
+			});
+
+			ctx.fillStyle = '#ffd700';
+			ctx.font = 'bold 42px sans-serif';
+			ctx.textAlign = 'center';
+			ctx.fillText('街 頭 魚 蝦 蟹 3D', 512, 100);
+			ctx.font = '22px sans-serif';
+			ctx.fillStyle = '#ffaaaa';
+			ctx.fillText('三骰同出 · 點數即贏', 512, 160);
 		}
-		window.addEventListener('resize', resizeCanvas);
-		resizeCanvas();
+		drawTableTexture();
 
-		const scoreVal = document.getElementById('score-val');
-		const stateLabel = document.getElementById('game-state-label');
-		const clearBtn = document.getElementById('clear-btn');
-		const shakeBtn = document.getElementById('shake-btn');
-		const camoOverlay = document.getElementById('camo-overlay');
-		const excelScoreVal = document.getElementById('excel-score-val');
+		const tableTexture = new THREE.CanvasTexture(boardCanvas);
+		tableTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-		function updateUI() {
-			scoreVal.textContent = wallet;
-			excelScoreVal.textContent = wallet;
+		const tableGeo = new THREE.BoxGeometry(4.0, 0.1, 4.0);
+		const tableMat = new THREE.MeshStandardMaterial({ map: tableTexture, roughness: 0.6 });
+		const tableMesh = new THREE.Mesh(tableGeo, tableMat);
+		tableMesh.position.set(0, 0, -0.6);
+		tableMesh.receiveShadow = true;
+		scene.add(tableMesh);
 
-			if (gameState === 'betting') {
-				stateLabel.textContent = '點擊木格子下注 (Bet)';
-				stateLabel.style.color = 'var(--gold)';
-				shakeBtn.textContent = '🎲 搖起骰盅 (Shake)';
-				shakeBtn.disabled = (totalBet === 0);
-				clearBtn.disabled = false;
-			} else if (gameState === 'shaking') {
-				stateLabel.textContent = '骰子飛旋中...';
-				stateLabel.style.color = '#fff';
-				shakeBtn.textContent = '搖動中...';
-				shakeBtn.disabled = true;
-				clearBtn.disabled = true;
-			} else if (gameState === 'thrown') {
-				stateLabel.textContent = '買定離手！揭開骰盅';
-				stateLabel.style.color = 'var(--neon-blue)';
-				shakeBtn.textContent = '揭開骰盅 (Reveal)';
-				shakeBtn.disabled = false;
-				clearBtn.disabled = true;
-			} else if (gameState === 'revealed') {
-				stateLabel.textContent = '派彩完畢！再次下注';
-				stateLabel.style.color = '#00ff66';
-				shakeBtn.textContent = '清空並重新下注 (Reset)';
-				shakeBtn.disabled = false;
-				clearBtn.disabled = false;
+		// --- 3D Bowl / Cup (骰盅) ---
+		const bowlGeo = new THREE.CylinderGeometry(0.65, 0.85, 0.8, 32, 1, true);
+		const bowlCapGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.05, 32);
+		const bowlMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.4, metalness: 0.3 });
+		const bowlMesh = new THREE.Mesh(bowlGeo, bowlMat);
+		const bowlCap = new THREE.Mesh(bowlCapGeo, bowlMat);
+		bowlCap.position.y = 0.4;
+		bowlMesh.add(bowlCap);
+		bowlMesh.castShadow = true;
+		bowlMesh.position.set(0, 0.45, -1.8);
+		scene.add(bowlMesh);
+
+		// --- 3D Dice ---
+		const diceGeo = new THREE.BoxGeometry(0.28, 0.28, 0.28);
+		const diceMeshes = [];
+
+		function createDiceTextures() {
+			return SYMBOLS.map(sym => {
+				const c = document.createElement('canvas');
+				c.width = 128; c.height = 128;
+				const cx = c.getContext('2d');
+				cx.fillStyle = '#fff8e7';
+				cx.fillRect(0, 0, 128, 128);
+				cx.strokeStyle = '#ccc';
+				cx.lineWidth = 6;
+				cx.strokeRect(4, 4, 120, 120);
+
+				cx.font = '55px sans-serif';
+				cx.textAlign = 'center';
+				cx.textBaseline = 'middle';
+				cx.fillText(sym.icon, 64, 64);
+				return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.3 });
+			});
+		}
+
+		const diceMaterials = createDiceTextures();
+
+		for(let i=0; i<3; i++) {
+			const dice = new THREE.Mesh(diceGeo, diceMaterials);
+			dice.castShadow = true;
+			dice.position.set((i - 1) * 0.35, 0.19, -1.8);
+			scene.add(dice);
+			diceMeshes.push(dice);
+		}
+
+		// --- Betting Raycaster & Chips ---
+		const raycaster = new THREE.Raycaster();
+		const mouse = new THREE.Vector2();
+		const chipMeshes = [];
+
+		// Map 6 tile positions on 3D table
+		const tilePositions = [
+			{ x: -1.0, z: 0.15 }, { x: 0.0, z: 0.15 }, { x: 1.0, z: 0.15 },
+			{ x: -1.0, z: 0.8 },  { x: 0.0, z: 0.8 },  { x: 1.0, z: 0.8 }
+		];
+
+		function onPointerDown(e) {
+			if (STATE.phase !== 'BETTING') return;
+			const rect = container.getBoundingClientRect();
+			mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+			mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+			raycaster.setFromCamera(mouse, camera);
+			const intersects = raycaster.intersectObject(tableMesh);
+
+			if (intersects.length > 0) {
+				const p = intersects[0].point;
+				// Determine which tile clicked
+				tilePositions.forEach((pos, idx) => {
+					if (Math.abs(p.x - pos.x) < 0.45 && Math.abs(p.z - pos.z) < 0.3) {
+						placeBet(idx);
+					}
+				});
 			}
 		}
 
-		function placeBet(symbolIndex) {
-			if (gameState !== 'betting' || isCamouflage) return;
-			if (wallet >= 100) {
-				wallet -= 100;
-				bets[symbolIndex] += 100;
-				totalBet += 100;
-				playSound('rattle');
+		container.addEventListener('mousedown', onPointerDown);
 
-				// Update bet badge
-				const badge = document.getElementById(`bet-${symbolIndex}`);
-				badge.textContent = bets[symbolIndex];
-				badge.style.display = 'block';
-
-				updateUI();
-			} else {
-				spawnTextFloat("本金不足！", canvas.width * 0.5, canvas.height * 0.5, '#ff3333');
-			}
+		function placeBet(tileIdx) {
+			if (STATE.balance < STATE.selectedChip) return;
+			STATE.balance -= STATE.selectedChip;
+			STATE.bets[tileIdx] += STATE.selectedChip;
+			playSound('chip');
+			updateHUD();
+			updateChipMeshes();
 		}
 
-		function clearBets() {
-			if (gameState !== 'betting' && gameState !== 'revealed' || isCamouflage) return;
+		function updateChipMeshes() {
+			// Clear existing chips
+			chipMeshes.forEach(m => scene.remove(m));
+			chipMeshes.length = 0;
 
-			// Refund current bets to wallet if cleared before shaking
-			if (gameState === 'betting') {
-				wallet += totalBet;
-			}
+			const chipGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.03, 16);
 
-			bets = [0, 0, 0, 0, 0, 0];
-			totalBet = 0;
-
-			// Hide all badges
-			for (let i = 0; i < 6; i++) {
-				const badge = document.getElementById(`bet-${i}`);
-				badge.style.display = 'none';
-			}
-
-			if (gameState === 'revealed') {
-				gameState = 'betting';
-				liftHeight = 0;
-			}
-
-			updateUI();
+			tilePositions.forEach((pos, idx) => {
+				const amount = STATE.bets[idx];
+				if (amount > 0) {
+					const count = Math.min(6, Math.ceil(amount / 500));
+					for(let c=0; c<count; c++) {
+						const chipMat = new THREE.MeshStandardMaterial({
+							color: amount >= 1000 ? 0x2a9d8f : amount >= 500 ? 0x457b9d : 0xe63946,
+							metalness: 0.5,
+							roughness: 0.3
+						});
+						const m = new THREE.Mesh(chipGeo, chipMat);
+						m.position.set(pos.x + (Math.random()-0.5)*0.05, 0.07 + c * 0.035, pos.z + (Math.random()-0.5)*0.05);
+						scene.add(m);
+						chipMeshes.push(m);
+					}
+				}
+			});
 		}
 
-		function startShaking() {
-			if (isCamouflage) return;
+		// --- Rolling & Outcome Logic ---
+		let diceResults = [0, 0, 0];
 
-			if (gameState === 'revealed') {
-				clearBets();
+		window.startRoll = function() {
+			const totalBet = STATE.bets.reduce((a, b) => a + b, 0);
+			if (totalBet === 0) {
+				alert('請先在檯面上點擊下注！');
 				return;
 			}
 
-			if (gameState === 'thrown') {
-				// Reveal dice
-				gameState = 'revealed';
-				updateUI();
-				revealResults();
-				return;
-			}
+			STATE.phase = 'SHAKING';
+			rollBtn.disabled = true;
 
-			gameState = 'shaking';
-			bowlShakeTimer = 0;
-			liftHeight = 0;
-			updateUI();
-		}
-
-		function revealResults() {
-			// Roll 3 random dice
-			rolledDice = [
+			// Generate 3 random dice results (0 to 5)
+			diceResults = [
 				Math.floor(Math.random() * 6),
 				Math.floor(Math.random() * 6),
 				Math.floor(Math.random() * 6)
 			];
 
-			playSound('clatter');
+			// Lower bowl over dice & shake
+			let shakeTime = 0;
+			playSound('shake');
 
-			// Calculate winnings
-			let totalWon = 0;
-			let isWin = false;
+			const shakeInterval = setInterval(() => {
+				shakeTime += 0.05;
+				bowlMesh.position.x = (Math.random() - 0.5) * 0.15;
+				bowlMesh.position.z = -1.8 + (Math.random() - 0.5) * 0.15;
+				bowlMesh.position.y = 0.45 + Math.abs(Math.sin(shakeTime * 20)) * 0.1;
 
-			// Count occurrences of each rolled symbol
-			let rollCounts = [0, 0, 0, 0, 0, 0];
-			rolledDice.forEach(d => rollCounts[d]++);
-
-			// Payout logic
-			for (let i = 0; i < 6; i++) {
-				if (bets[i] > 0 && rollCounts[i] > 0) {
-					isWin = true;
-					const multiplier = rollCounts[i]; // 1x, 2x, or 3x
-					const payout = bets[i] + (bets[i] * multiplier);
-					totalWon += payout;
+				if (shakeTime >= 1.5) {
+					clearInterval(shakeInterval);
+					bowlMesh.position.set(0, 0.45, -1.8);
+					revealOutcome();
 				}
+			}, 30);
+		};
+
+		function revealOutcome() {
+			// Lift bowl up
+			let liftTime = 0;
+			const liftInterval = setInterval(() => {
+				liftTime += 0.05;
+				bowlMesh.position.y += 0.08;
+
+				if (liftTime >= 0.8) {
+					clearInterval(liftInterval);
+					STATE.phase = 'REVEALED';
+
+					// Set dice face rotations to match diceResults
+					diceMeshes.forEach((dice, i) => {
+						dice.material = diceMaterials[diceResults[i]];
+					});
+
+					calculateWinnings();
+				}
+			}, 30);
+		}
+
+		function calculateWinnings() {
+			let totalWin = 0;
+
+			// Count occurrences of each symbol in diceResults
+			const counts = [0, 0, 0, 0, 0, 0];
+			diceResults.forEach(r => counts[r]++);
+
+			STATE.bets.forEach((betAmount, idx) => {
+				if (betAmount > 0 && counts[idx] > 0) {
+					// 1 match = 1:1, 2 matches = 1:2, 3 matches = 1:3
+					const multiplier = counts[idx];
+					totalWin += betAmount + (betAmount * multiplier);
+				}
+			});
+
+			if (totalWin > 0) {
+				STATE.balance += totalWin;
+				playSound('win');
+				resultTitle.innerText = '恭喜中獎！🎉';
+				resultTitle.style.color = 'var(--gold)';
+				resultDesc.innerText = `贏得 ${totalWin} 籌碼！`;
+			} else {
+				playSound('lose');
+				resultTitle.innerText = '可惜落空 💸';
+				resultTitle.style.color = '#ff5555';
+				resultDesc.innerText = '下局再接再厲！';
 			}
 
-			wallet += totalWon;
+			resultDiceIcons.innerText = diceResults.map(r => SYMBOLS[r].icon).join(' ');
+			resultBanner.classList.add('show');
+			updateHUD();
 
 			setTimeout(() => {
-				if (isWin) {
-					playSound('win');
-					spawnTextFloat(`恭喜！贏得 +${totalWon} 點`, canvas.width * 0.5, canvas.height * 0.5, '#00ff66');
-				} else {
-					spawnTextFloat(`落空！損失 -${totalBet} 點`, canvas.width * 0.5, canvas.height * 0.5, '#ff3333');
-				}
-
-				// If bankrupt, give a complimentary 1000 tokens
-				if (wallet === 0 && totalWon === 0) {
-					wallet = 1000;
-					spawnTextFloat("神明眷顧！贈送 1000 本金", canvas.width * 0.5, canvas.height * 0.55, 'var(--gold)');
-				}
-
-				updateUI();
-				submitScoreToParent(wallet);
-			}, 500);
+				resultBanner.classList.remove('show');
+				STATE.phase = 'BETTING';
+				rollBtn.disabled = false;
+			}, 2800);
 		}
 
-		function submitScoreToParent(finalScore) {
-			if (window.parent && window.parent !== window) {
-				window.parent.postMessage({
-					type: 'STUPIDPIG_SCORE_UPDATED',
-					gameId: 'fish-prawn-crab',
-					score: finalScore
-				}, '*');
-			}
+		// --- Main Game Loop ---
+		function animate() {
+			requestAnimationFrame(animate);
+			renderer.render(scene, camera);
 		}
 
-		function spawnTextFloat(text, x, y, color = '#fff') {
-			textFloats.push({
-				text: text,
-				x: x,
-				y: y,
-				vy: -1.0,
-				alpha: 1.0,
-				life: 80,
-				color: color
-			});
-		}
+		animate();
+		updateHUD();
 
-		// Canvas drawing
-		function drawAltar(ctx) {
-			// Wooden table background
-			ctx.fillStyle = '#0f0a17';
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-			// Decorative temple altar borders
-			ctx.strokeStyle = 'rgba(255, 215, 0, 0.12)';
-			ctx.lineWidth = 4;
-			ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-			// Draw blue plate base
-			ctx.fillStyle = '#f0f5ff';
-			ctx.strokeStyle = '#c5d5f5';
-			ctx.lineWidth = 4;
-			ctx.beginPath();
-			ctx.arc(bowlX, bowlY + 15, 80, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-
-			// Inside circular details of plate
-			ctx.strokeStyle = '#a4bfe8';
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			ctx.arc(bowlX, bowlY + 15, 60, 0, Math.PI * 2);
-			ctx.stroke();
-		}
-
-		function drawDice(ctx) {
-			if (gameState !== 'revealed') return;
-
-			// Draw 3 dice sitting on plate
-			const dicePositions = [
-				{ x: bowlX - 25, y: bowlY + 10 },
-				{ x: bowlX + 25, y: bowlY + 10 },
-				{ x: bowlX, y: bowlY + 28 }
-			];
-
-			rolledDice.forEach((d, idx) => {
-				const pos = dicePositions[idx];
-
-				// Dice white square
-				ctx.fillStyle = '#ffffff';
-				ctx.strokeStyle = '#8a3324';
-				ctx.lineWidth = 2;
-				ctx.beginPath();
-				ctx.roundRect(pos.x - 16, pos.y - 16, 32, 32, [4]);
-				ctx.fill();
-				ctx.stroke();
-
-				// Symbol
-				ctx.fillStyle = '#8a3324';
-				ctx.font = 'bold 20px sans-serif';
-				ctx.textAlign = 'center';
-				ctx.fillText(SYMBOLS[d].emoji, pos.x, pos.y + 7);
-			});
-		}
-
-		function drawBowl(ctx) {
-			const x = bowlX + bowlOffset.x;
-			const y = bowlY + bowlOffset.y - liftHeight;
-
-			ctx.save();
-			ctx.translate(x, y);
-			ctx.rotate((bowlAngle * Math.PI) / 180);
-
-			// Shadow
-			ctx.fillStyle = 'rgba(0,0,0,0.3)';
-			ctx.beginPath();
-			ctx.ellipse(0, 20, 68, 12, 0, 0, Math.PI * 2);
-			ctx.fill();
-
-			// Wooden brown lacquer bowl cover
-			ctx.fillStyle = '#5c2d18';
-			ctx.strokeStyle = '#381b0e';
-			ctx.lineWidth = 3;
-			ctx.beginPath();
-			ctx.arc(0, 0, 64, Math.PI, 0, false);
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
-
-			// Gold rings decoration on bowl
-			ctx.strokeStyle = '#ffd700';
-			ctx.lineWidth = 2.5;
-			ctx.beginPath();
-			ctx.arc(0, 0, 48, Math.PI, 0, false);
-			ctx.stroke();
-
-			// Knob top handle
-			ctx.fillStyle = '#ffd700';
-			ctx.beginPath();
-			ctx.arc(0, -62, 10, 0, Math.PI * 2);
-			ctx.fill();
-
-			ctx.restore();
-		}
-
-		function updateParticles() {
-			for (let i = textFloats.length - 1; i >= 0; i--) {
-				const t = textFloats[i];
-				t.y += t.vy;
-				t.life--;
-				if (t.life <= 0) {
-					textFloats.splice(i, 1);
-				}
-			}
-		}
-
-		function drawParticles(ctx) {
-			ctx.textAlign = 'center';
-			textFloats.forEach(t => {
-				ctx.save();
-				ctx.globalAlpha = Math.min(1.0, t.life / 20);
-				ctx.fillStyle = t.color;
-				ctx.font = 'bold 16px Arial';
-				ctx.shadowColor = '#000';
-				ctx.shadowBlur = 3;
-				ctx.fillText(t.text, t.x, t.y);
-				ctx.restore();
-			});
-		}
-
-		function gameLoop() {
-			updateParticles();
-
-			drawAltar(ctx);
-			drawDice(ctx);
-			drawBowl(ctx);
-			drawParticles(ctx);
-
-			if (!isCamouflage) {
-				if (gameState === 'shaking') {
-					bowlShakeTimer++;
-
-					// Shaking vibrations
-					bowlAngle = Math.sin(bowlShakeTimer * 0.9) * 12;
-					bowlOffset.x = Math.cos(bowlShakeTimer * 1.5) * 6;
-					bowlOffset.y = Math.sin(bowlShakeTimer * 1.1) * 3;
-
-					if (bowlShakeTimer % 6 === 0) {
-						playSound('rattle');
-					}
-
-					if (bowlShakeTimer > 90) {
-						// Finish shaking
-						gameState = 'thrown';
-						playSound('clatter');
-						bowlAngle = 0;
-						bowlOffset = { x: 0, y: 0 };
-						updateUI();
-					}
-				} else if (gameState === 'revealed') {
-					// Lift bowl animation
-					liftHeight = Math.min(65, liftHeight + 2.5);
-				}
-			}
-
-			requestAnimationFrame(gameLoop);
-		}
-
-		// Place bets triggers on mat tiles
-		const tiles = document.querySelectorAll('.mat-tile');
-		tiles.forEach(tile => {
-			const clickHandler = (e) => {
-				e.stopPropagation();
-				const symbolIdx = parseInt(tile.getAttribute('data-symbol'), 10);
-				placeBet(symbolIdx);
-			};
-
-			tile.addEventListener('click', clickHandler);
-			tile.addEventListener('touchstart', (e) => {
-				e.preventDefault();
-				clickHandler(e);
-			});
-		});
-
-		clearBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			clearBets();
-		});
-
-		shakeBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			startShaking();
-		});
-
-		function toggleCamouflage() {
-			isCamouflage = !isCamouflage;
-			if (isCamouflage) {
-				camoOverlay.style.display = 'flex';
-			} else {
-				camoOverlay.style.display = 'none';
-			}
-		}
-
-		window.addEventListener('keydown', (e) => {
-			if (e.code === 'Space') {
-				e.preventDefault();
-				toggleCamouflage();
-			}
-		});
-
-		// Initialize
-		updateUI();
-		gameLoop();
 	</script>
 </body>
 </html>

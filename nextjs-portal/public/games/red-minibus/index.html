@@ -2,15 +2,16 @@
 <html lang="zh-HK">
 <head>
 	<meta charset="utf-8">
-	<title>亡命紅Van大挑戰 (Death-Defying Red Minibus Challenge)</title>
+	<title>亡命紅Van大挑戰 3D (Death-Defying Red Minibus 3D)</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<!-- Three.js CDN -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<style>
 		:root {
 			--neon-red: #ff3333;
-			--neon-green: #33ff33;
 			--neon-yellow: #ffdd00;
 			--neon-blue: #00e5ff;
-			--cstyle-bg: #090810;
+			--bg-dark: #08060c;
 		}
 
 		* {
@@ -18,14 +19,14 @@
 			padding: 0;
 			box-sizing: border-box;
 			user-select: none;
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 		}
 
 		body, html {
 			width: 100%;
 			height: 100%;
 			overflow: hidden;
-			background-color: var(--cstyle-bg);
+			background-color: var(--bg-dark);
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -34,25 +35,23 @@
 		#game-container {
 			position: relative;
 			width: 100%;
-			max-width: 800px;
+			max-width: 1000px;
 			height: 100%;
-			max-height: 600px;
+			max-height: 700px;
 			background-color: #050308;
 			border: 2px solid rgba(255, 51, 51, 0.4);
 			border-radius: 12px;
-			box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);
+			box-shadow: 0 0 35px rgba(255, 51, 51, 0.25);
 			overflow: hidden;
-			display: flex;
-			flex-direction: column;
 		}
 
 		#game-canvas {
 			width: 100%;
-			height: 66%;
+			height: 100%;
 			display: block;
 		}
 
-		/* HUD Overlays */
+		/* HUD Panel */
 		.hud-panel {
 			position: absolute;
 			top: 15px;
@@ -73,284 +72,204 @@
 			color: #fff;
 			font-size: 0.9rem;
 			pointer-events: auto;
-			backdrop-filter: blur(5px);
-			box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+			backdrop-filter: blur(8px);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 		}
 
-		.score-label {
+		.speedometer {
+			font-size: 1.8rem;
+			font-weight: 800;
 			color: var(--neon-yellow);
-			font-weight: bold;
-			font-size: 1.2rem;
 			font-family: monospace;
+			text-shadow: 0 0 10px var(--neon-yellow);
 		}
 
-		.target-container {
+		/* Touch Steering Controls */
+		.touch-controls {
 			position: absolute;
-			top: 85px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: rgba(255, 51, 51, 0.15);
-			border: 2px solid var(--neon-red);
-			border-radius: 10px;
-			padding: 10px 24px;
-			color: #fff;
-			text-align: center;
-			z-index: 10;
-			box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
-			pointer-events: none;
-			animation: target-pulse 2s infinite alternate;
-		}
-
-		.target-dest {
-			font-size: 1.7rem;
-			font-weight: 900;
-			color: var(--neon-yellow);
-			text-shadow: 0 0 8px rgba(255, 221, 0, 0.6);
-			margin-top: 4px;
-		}
-
-		/* Slang Buttons Container */
-		.options-grid {
-			position: relative;
-			width: calc(100% - 30px);
-			margin: 10px auto 12px auto;
-			height: 29%;
-			display: grid;
-			grid-template-columns: repeat(2, 1fr);
-			gap: 12px;
+			bottom: 25px;
+			left: 20px;
+			right: 20px;
+			display: flex;
+			justify-content: space-between;
 			z-index: 20;
+			pointer-events: none;
 		}
 
-		.slang-btn {
-			background: linear-gradient(180deg, #2b1f3d 0%, #150f22 100%);
-			border: 1px solid rgba(255, 255, 255, 0.15);
+		.ctrl-btn {
+			width: 70px;
+			height: 70px;
+			border-radius: 50%;
+			background: rgba(255, 51, 51, 0.25);
+			border: 2px solid var(--neon-red);
 			color: #fff;
-			padding: 14px;
-			border-radius: 8px;
-			font-size: 1rem;
-			font-weight: bold;
+			font-size: 1.8rem;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			pointer-events: auto;
 			cursor: pointer;
-			transition: all 0.15s;
-			box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+			box-shadow: 0 0 15px rgba(255,51,51,0.4);
+			backdrop-filter: blur(5px);
+		}
+
+		.ctrl-btn:active {
+			background: rgba(255, 51, 51, 0.6);
+			transform: scale(0.95);
+		}
+
+		.stop-btn {
+			width: auto;
+			padding: 0 24px;
+			border-radius: 35px;
+			background: linear-gradient(180deg, #ffdd00 0%, #b39b00 100%);
+			color: #000;
+			font-weight: bold;
+			font-size: 1.1rem;
+			border: 2px solid #fff;
+		}
+
+		/* Start Overlay */
+		.start-overlay {
+			position: absolute;
+			top: 0; left: 0; width: 100%; height: 100%;
+			background: rgba(5, 3, 8, 0.88);
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			z-index: 100;
+			color: #fff;
 			text-align: center;
+			padding: 20px;
 		}
 
-		.slang-btn:hover {
-			transform: translateY(-2px);
-			border-color: var(--neon-blue);
-			box-shadow: 0 4px 15px rgba(0, 229, 255, 0.25);
-			background: linear-gradient(180deg, #37284e 0%, #1d152f 100%);
+		.start-title {
+			font-size: 2.5rem;
+			font-weight: bold;
+			color: var(--neon-red);
+			text-shadow: 0 0 20px var(--neon-red);
+			margin-bottom: 10px;
 		}
 
-		.slang-btn:active {
-			transform: translateY(1px);
+		.start-btn {
+			margin-top: 25px;
+			background: linear-gradient(180deg, #ff3333 0%, #b30000 100%);
+			color: #fff;
+			border: none;
+			padding: 14px 40px;
+			font-size: 1.2rem;
+			font-weight: bold;
+			border-radius: 30px;
+			cursor: pointer;
+			box-shadow: 0 0 20px rgba(255,51,51,0.5);
+			transition: all 0.2s;
 		}
 
-		.slang-btn.correct-flash {
-			background: linear-gradient(180deg, #1b5e20 0%, #0d3c13 100%) !important;
-			border-color: var(--neon-green) !important;
-			box-shadow: 0 0 15px var(--neon-green) !important;
-		}
-
-		.slang-btn.wrong-flash {
-			background: linear-gradient(180deg, #b71c1c 0%, #7f0000 100%) !important;
-			border-color: var(--neon-red) !important;
-			box-shadow: 0 0 15px var(--neon-red) !important;
+		.start-btn:hover {
+			transform: scale(1.06);
 		}
 
 		/* Excel Camouflage */
 		#camo-overlay {
 			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background-color: #f3f2f1;
-			z-index: 1000;
+			top: 0; left: 0; width: 100%; height: 100%;
+			background: #ffffff;
+			z-index: 999;
 			display: none;
 			flex-direction: column;
+			color: #000;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			color: #323130;
 		}
 
 		.excel-titlebar {
-			background-color: #107c41;
-			color: white;
-			padding: 8px 16px;
+			background: #107c41;
+			color: #fff;
+			padding: 6px 12px;
+			font-size: 0.85rem;
 			display: flex;
 			justify-content: space-between;
-			align-items: center;
-			font-size: 0.85rem;
-			font-weight: 600;
 		}
 
 		.excel-toolbar {
-			background-color: #f3f2f1;
+			background: #f3f2f1;
 			border-bottom: 1px solid #e1dfdd;
-			padding: 6px 16px;
-			display: flex;
-			gap: 20px;
-			font-size: 0.8rem;
+			padding: 8px 12px;
+			display: flex; gap: 15px; font-size: 0.85rem;
 		}
 
 		.excel-grid-container {
-			flex: 1;
-			overflow: auto;
+			flex: 1; overflow: auto; padding: 10px;
 		}
 
 		.excel-table {
-			border-collapse: collapse;
-			background-color: white;
-			width: 100%;
+			border-collapse: collapse; width: 100%; font-size: 0.85rem;
 		}
 
 		.excel-table th, .excel-table td {
-			border: 1px solid #d2d0ce;
-			padding: 6px 12px;
-			font-size: 0.8rem;
+			border: 1px solid #d2d0ce; padding: 6px 12px; text-align: left;
 		}
 
-		.excel-table th {
-			background-color: #f3f2f1;
-			font-weight: normal;
-			color: #323130;
-		}
-
-		.excel-cell-header {
-			background-color: #f3f2f1;
-			text-align: center;
-			color: #505050;
-			width: 40px;
-		}
-
-		@keyframes target-pulse {
-			0% { box-shadow: 0 0 10px rgba(255, 51, 51, 0.3); }
-			100% { box-shadow: 0 0 20px rgba(255, 51, 51, 0.7); }
-		}
-
-		/* Mobile / Low Height Viewport Adjustments to prevent UI overlapping */
-		@media (max-width: 500px), (max-height: 500px) {
-			#game-canvas {
-				height: 56%;
-			}
-			.options-grid {
-				height: 38%;
-				margin: 5px auto 8px auto;
-				gap: 8px;
-			}
-			.slang-btn {
-				padding: 8px 6px;
-				font-size: 0.8rem;
-				border-radius: 6px;
-			}
-			.target-container {
-				top: 55px;
-				padding: 4px 12px;
-			}
-			.target-dest {
-				font-size: 1.15rem;
-			}
-			.hud-panel {
-				top: 6px;
-				left: 8px;
-				right: 8px;
-			}
-			.hud-card {
-				padding: 4px 8px;
-				font-size: 0.68rem;
-			}
-			.score-label {
-				font-size: 0.9rem;
-			}
-		}
+		.excel-table th { background: #f3f2f1; }
 	</style>
 </head>
 <body>
+
 	<div id="game-container">
 		<canvas id="game-canvas"></canvas>
 
-		<!-- Top HUD Panel -->
+		<!-- HUD Header -->
 		<div class="hud-panel">
 			<div class="hud-card">
-				<div>🚐 亡命紅Van大挑戰</div>
-				<div style="margin-top: 4px;">分數: <span class="score-label" id="score-val">0</span></div>
+				<div>車速 (Speed): <span class="speedometer" id="speed-val">0</span> km/h</div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">按 [A/D] 或 [←/→] 閃避障礙</div>
 			</div>
-			<div class="hud-card" style="text-align: right;">
-				<div id="combo-display" style="font-weight: bold; color: var(--neon-green);">Combo: 0</div>
-				<div style="margin-top: 4px; font-size: 0.72rem; color: #8c89ad;">按 [空格鍵] 扮工</div>
+			<div class="hud-card">
+				<div>車資收益: <span style="color: var(--neon-yellow); font-weight: bold; font-size: 1.3rem;" id="fare-val">$0</span></div>
+				<div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">落客提示: <span id="stop-notice" style="color: #ff3333; font-weight: bold;">--</span></div>
 			</div>
 		</div>
 
-		<!-- Target Stop Overlay -->
-		<div class="target-container">
-			<div style="font-size: 0.8rem; color: #ccc; letter-spacing: 1px;">下一站落車點 (Next Stop)</div>
-			<div class="target-dest" id="target-dest">旺角 (Mong Kok)</div>
+		<!-- Touch Controls -->
+		<div class="touch-controls">
+			<div style="display: flex; gap: 15px;">
+				<div class="ctrl-btn" id="btn-left">◀</div>
+				<div class="ctrl-btn" id="btn-right">▶</div>
+			</div>
+			<div class="ctrl-btn stop-btn" id="btn-stop">📢 有落！(DROP OFF)</div>
 		</div>
 
-		<!-- Options Grid -->
-		<div class="options-grid" id="options-grid">
-			<!-- Populated via Javascript -->
+		<!-- Start Overlay -->
+		<div class="start-overlay" id="start-modal">
+			<div class="start-title">亡 命 紅 V a n 大 挑 戰 3D</div>
+			<div style="max-width: 500px; line-height: 1.6; color: #ccc;">
+				深夜極速行駛屯門公路！閃避的士與雙層巴士，收集車資金幣，並在乘客叫喊「有落」時即時剎車！
+			</div>
+			<button class="start-btn" onclick="startGame()">🚀 亡命開車！</button>
 		</div>
 
 		<!-- Excel Camouflage -->
 		<div id="camo-overlay">
 			<div class="excel-titlebar">
-				<span>Microsoft Excel - RedMinibus_Logistics_Planning_2026.xlsx</span>
+				<span>Microsoft Excel - RedMinibus_Route_Schedule_2026.xlsx</span>
 				<span>[扮工中 - 按空白鍵返回遊戲]</span>
 			</div>
 			<div class="excel-toolbar">
 				<span style="font-weight: bold; border-bottom: 2px solid #107c41; padding-bottom: 2px;">檔案</span>
-				<span>常用</span>
-				<span>插入</span>
-				<span>公式</span>
-				<span>資料</span>
+				<span>常用</span> <span>路線時效</span> <span>車資精算</span>
 			</div>
 			<div class="excel-grid-container">
 				<table class="excel-table">
 					<thead>
 						<tr>
-							<th></th>
-							<th>A (目的地)</th>
-							<th>B (乘客落車暗號)</th>
-							<th>C (時速 km/h)</th>
-							<th>D (累計分數)</th>
+							<th></th> <th>A (路線路段)</th> <th>B (平均時速)</th> <th>C (乘客人數)</th> <th>D (總收益)</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr>
-							<td class="excel-cell-header">1</td>
-							<td style="font-weight: bold;">紅Van路線開拓日誌</td>
-							<td></td>
-							<td></td>
-							<td></td>
-						</tr>
-						<tr>
-							<td class="excel-cell-header">2</td>
-							<td>旺角</td>
-							<td>銀行中心有落！</td>
-							<td>140</td>
-							<td id="excel-score-val" style="color: #0071e3; font-weight: bold;">0</td>
-						</tr>
-						<tr>
-							<td class="excel-cell-header">3</td>
-							<td>銅鑼灣</td>
-							<td>波斯富街有落！</td>
-							<td>135</td>
-							<td></td>
-						</tr>
-						<tr>
-							<td class="excel-cell-header">4</td>
-							<td>尖沙咀</td>
-							<td>金馬倫道有落！</td>
-							<td>120</td>
-							<td></td>
-						</tr>
-						<tr>
-							<td class="excel-cell-header">5</td>
-							<td>香港仔</td>
-							<td>燈筒有落！</td>
-							<td>110</td>
-							<td></td>
+							<td style="background: #f3f2f1; font-weight: bold; text-align: center;">1</td>
+							<td>旺角至元朗夜班線</td> <td>138 km/h</td> <td>16 人</td>
+							<td id="excel-fare-val" style="font-weight: bold; color: #107c41;">$0</td>
 						</tr>
 					</tbody>
 				</table>
@@ -359,7 +278,7 @@
 	</div>
 
 	<script>
-		// Setup Audio
+		// --- Web Audio Synthesizer ---
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
 		let audioCtx = null;
 
@@ -374,520 +293,309 @@
 				if (!audioCtx) return;
 				const now = audioCtx.currentTime;
 
-				if (type === 'slap') {
-					// Buzzer / brake beep
+				if (type === 'engine') {
+					const osc = audioCtx.createOscillator();
+					osc.type = 'sawtooth';
+					osc.frequency.setValueAtTime(80, now);
+					osc.frequency.exponentialRampToValueAtTime(140, now + 0.2);
+					const gain = audioCtx.createGain();
+					gain.gain.setValueAtTime(0.15, now);
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.2);
+				} else if (type === 'coin') {
 					const osc = audioCtx.createOscillator();
 					osc.type = 'sine';
-					osc.frequency.setValueAtTime(800, now);
+					osc.frequency.setValueAtTime(987.77, now); // B5
+					osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
 					const gain = audioCtx.createGain();
 					gain.gain.setValueAtTime(0.2, now);
-					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-					osc.connect(gain);
-					gain.connect(audioCtx.destination);
-					osc.start(now);
-					osc.stop(now + 0.15);
-				} else if (type === 'screech') {
-					// Brake screech (synthesized noise)
-					const bufferSize = audioCtx.sampleRate * 0.4;
-					const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-					const data = buffer.getChannelData(0);
-					for (let i = 0; i < bufferSize; i++) {
-						data[i] = Math.random() * 2 - 1;
-					}
-					const noise = audioCtx.createBufferSource();
-					noise.buffer = buffer;
-
-					const filter = audioCtx.createBiquadFilter();
-					filter.type = 'bandpass';
-					filter.frequency.setValueAtTime(3000, now);
-					filter.frequency.exponentialRampToValueAtTime(1000, now + 0.4);
-
+					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.25);
+				} else if (type === 'crash') {
+					const osc = audioCtx.createOscillator();
+					osc.type = 'square';
+					osc.frequency.setValueAtTime(120, now);
+					osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
 					const gain = audioCtx.createGain();
-					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.setValueAtTime(0.3, now);
 					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-
-					noise.connect(filter);
-					filter.connect(gain);
-					gain.connect(audioCtx.destination);
-					noise.start(now);
-				} else if (type === 'honk') {
-					// Double honk
-					for (let i = 0; i < 2; i++) {
-						const honkTime = now + i * 0.18;
-						const osc1 = audioCtx.createOscillator();
-						const osc2 = audioCtx.createOscillator();
-						osc1.type = 'sawtooth';
-						osc2.type = 'sawtooth';
-						osc1.frequency.setValueAtTime(440, honkTime);
-						osc2.frequency.setValueAtTime(445, honkTime);
-
-						const gain = audioCtx.createGain();
-						gain.gain.setValueAtTime(0.15, honkTime);
-						gain.gain.exponentialRampToValueAtTime(0.001, honkTime + 0.12);
-
-						osc1.connect(gain);
-						osc2.connect(gain);
-						gain.connect(audioCtx.destination);
-
-						osc1.start(honkTime);
-						osc2.start(honkTime);
-						osc1.stop(honkTime + 0.13);
-						osc2.stop(honkTime + 0.13);
-					}
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.4);
 				}
-			} catch(e) {
-				console.warn(e);
-			}
+			} catch(e) {}
 		}
 
-		function speakSentence(text) {
-			if ('speechSynthesis' in window) {
-				window.speechSynthesis.cancel();
-				const utterance = new SpeechSynthesisUtterance(text);
-				utterance.lang = 'zh-HK'; // Cantonese voice
-				utterance.rate = 1.1;     // Fast-paced shout
-				utterance.pitch = 1.0;
-				window.speechSynthesis.speak(utterance);
-			}
+		// Game State
+		const STATE = {
+			playing: false,
+			speed: 110, // km/h
+			fare: 0,
+			minibusX: 0, // -1.8 to 1.8
+			stopRequired: false,
+			stopTimer: 0
+		};
+
+		const speedValEl = document.getElementById('speed-val');
+		const fareValEl = document.getElementById('fare-val');
+		const excelFareValEl = document.getElementById('excel-fare-val');
+		const stopNoticeEl = document.getElementById('stop-notice');
+		const startModal = document.getElementById('start-modal');
+
+		function updateHUD() {
+			speedValEl.innerText = Math.floor(STATE.speed);
+			fareValEl.innerText = '$' + STATE.fare;
+			excelFareValEl.innerText = '$' + STATE.fare;
+			stopNoticeEl.innerText = STATE.stopRequired ? '⚠️ 有落！按 [有落] 剎車！' : '--';
 		}
 
-		// Game database stops
-		const STOPS_DB = [
-			{ dest: "旺角 (Mong Kok)", correct: "銀行中心有落！", wrong: ["百老匯有落！", "太子地鐵站有落！", "信和中心有落！"], shout: "銀行中心有落，唔該！" },
-			{ dest: "銅鑼灣 (Causeway Bay)", correct: "波斯富街有落！", wrong: ["崇光百貨有落！", "時代廣場有落！", "鵝頸橋有落！"], shout: "波斯富街有落，司機！" },
-			{ dest: "尖沙咀 (Tsim Sha Tsui)", correct: "金馬倫道有落！", wrong: ["尖東站有落！", "海港城有落！", "美麗華有落！"], shout: "金馬倫道有落，唔該！" },
-			{ dest: "西環 (Sai Wan)", correct: "水街有落！", wrong: ["港大站有落！", "西邊街有落！", "中環碼頭有落！"], shout: "水街有落，唔該司機！" },
-			{ dest: "觀塘 (Kwun Tong)", correct: "裕民坊有落！", wrong: ["apm有落！", "開源道有落！", "牛頭角有落！"], shout: "裕民坊有落，唔該！" },
-			{ dest: "香港仔 (Aberdeen)", correct: "燈筒有落！", wrong: ["中心商場有落！", "避風塘有落！", "黃竹坑有落！"], shout: "燈筒有落，有落！" }
-		];
-
-		let score = 0;
-		let combo = 0;
-		let currentStop = STOPS_DB[0];
-		let isCamouflage = false;
-
-		// Game physics loop variables
-		let busX = 120;
-		let busY = 320;
-		let speed = 4; // screen pixel speed
-		let isBraking = false;
-		let brakeTimer = 0;
-		let screenShake = 0;
-
-		// Signboard location
-		let signX = 850;
-		let signY = 260;
-		let signLabel = "旺角";
-		let isMissed = false;
-
-		// Smoke particles
-		let particles = [];
-
-		// Scrolling city buildings parallax system
-		let cityBuildings = [
-			{ x: 50, w: 120, h: 180, color: '#06030c', sign: { text: "金記珠寶", color: '#00ffff', vertical: true } },
-			{ x: 260, w: 160, h: 220, color: '#090514', sign: { text: "生滾粥", color: '#ff00ff', vertical: false } },
-			{ x: 500, w: 140, h: 190, color: '#050308', sign: { text: "網吧摸魚", color: '#00ff66', vertical: true } },
-			{ x: 720, w: 180, h: 230, color: '#0a0718', sign: { text: "避風塘炒蟹", color: '#ff9900', vertical: false } }
-		];
-
-
-		const canvas = document.getElementById('game-canvas');
-		const ctx = canvas.getContext('2d');
-
-		function resizeCanvas() {
-			canvas.width = canvas.clientWidth;
-			canvas.height = canvas.clientHeight;
-			busY = canvas.height * 0.58;
-			signY = canvas.height * 0.42;
-		}
-		window.addEventListener('resize', resizeCanvas);
-		resizeCanvas();
-
-		const scoreVal = document.getElementById('score-val');
-		const comboDisplay = document.getElementById('combo-display');
-		const targetDest = document.getElementById('target-dest');
-		const optionsGrid = document.getElementById('options-grid');
-		const camoOverlay = document.getElementById('camo-overlay');
-		const excelScoreVal = document.getElementById('excel-score-val');
-
-		function generateOptions() {
-			optionsGrid.innerHTML = '';
-			const opts = [currentStop.correct, ...currentStop.wrong];
-			// Shuffle
-			opts.sort(() => Math.random() - 0.5);
-
-			opts.forEach(o => {
-				const btn = document.createElement('button');
-				btn.className = 'slang-btn';
-				btn.textContent = o;
-				btn.addEventListener('click', (e) => handleOptionClick(btn, o));
-				btn.addEventListener('touchstart', (e) => {
-					e.preventDefault();
-					handleOptionClick(btn, o);
-				});
-				optionsGrid.appendChild(btn);
-			});
-		}
-
-		function setupNextStop() {
-			currentStop = STOPS_DB[Math.floor(Math.random() * STOPS_DB.length)];
-			targetDest.textContent = currentStop.dest;
-			signLabel = currentStop.dest.split(' ')[0];
-			signX = canvas.width + 100;
-			isMissed = false;
-			isBraking = false;
-			speed = 4 + Math.min(6, combo * 0.4);
-			generateOptions();
-		}
-
-		function handleOptionClick(btn, selected) {
-			if (isCamouflage || isBraking || isMissed) return;
-
-			if (selected === currentStop.correct) {
-				// Success strike!
-				btn.classList.add('correct-flash');
-				isBraking = true;
-				brakeTimer = 0;
-				screenShake = 12;
-				playSound('slap');
-				playSound('screech');
-				speakSentence(currentStop.shout);
-
-				// Score calculation
-				combo++;
-				const points = 100 + combo * 20;
-				score += points;
-
-				scoreVal.textContent = score;
-				comboDisplay.textContent = `Combo: ${combo}`;
-				excelScoreVal.textContent = score;
-
-				submitScoreToParent(score);
-
-				// Spawn lots of exhaust brake smoke
-				for (let i = 0; i < 25; i++) {
-					particles.push({
-						x: busX + 40,
-						y: busY + 35,
-						vx: -Math.random() * 8 - 2,
-						vy: (Math.random() - 0.5) * 5 - 2,
-						radius: Math.random() * 8 + 4,
-						alpha: 0.9,
-						decay: 0.02
-					});
-				}
-			} else {
-				// Wrong choice trigger penalty!
-				btn.classList.add('wrong-flash');
-				combo = 0;
-				comboDisplay.textContent = `Combo: 0`;
-				playSound('honk');
-				speed += 2; // driver speeds up in anger!
-			}
-		}
-
-		function submitScoreToParent(finalScore) {
-			if (window.parent && window.parent !== window) {
-				window.parent.postMessage({
-					type: 'STUPIDPIG_SCORE_UPDATED',
-					gameId: 'red-minibus',
-					score: finalScore
-				}, '*');
-			}
-		}
-
-		function toggleCamouflage() {
-			isCamouflage = !isCamouflage;
-			if (isCamouflage) {
-				camoOverlay.style.display = 'flex';
-			} else {
-				camoOverlay.style.display = 'none';
-			}
-		}
-
-		// Animation Drawings
-		function drawScrollingBackground(ctx) {
-			// Scrolling neon city background
-			const currentSpeed = isBraking ? speed * (1 - brakeTimer / 45) : speed;
-
-			// Update buildings positions in parallax
-			if (!isCamouflage) {
-				cityBuildings.forEach(b => {
-					b.x -= currentSpeed * 0.45;
-					if (b.x + b.w < 0) {
-						b.x = canvas.width + Math.random() * 100;
-						b.h = 140 + Math.random() * 110;
-						b.w = 90 + Math.random() * 90;
-						const colors = ['#06030c', '#090514', '#050308', '#0a0718'];
-						b.color = colors[Math.floor(Math.random() * colors.length)];
-						
-						const signs = [
-							{ text: "絲襪奶茶", color: "#ffdd00", vertical: true },
-							{ text: "菠蘿油", color: "#ff2a85", vertical: false },
-							{ text: "魚蛋粉", color: "#00f0ff", vertical: true },
-							{ text: "許留山", color: "#ff9f00", vertical: false },
-							{ text: "生滾粥", color: "#ff00ff", vertical: false },
-							{ text: "避風塘炒蟹", color: "#ff9900", vertical: false },
-							{ text: "金味烤肉", color: "#00ff66", vertical: true }
-						];
-						b.sign = signs[Math.floor(Math.random() * signs.length)];
-					}
-				});
-			}
-
-			// Nathan road ground
-			ctx.fillStyle = '#110d21';
-			ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
-
-			// Road dividers
-			ctx.strokeStyle = '#322552';
-			ctx.lineWidth = 4;
-			ctx.beginPath();
-			ctx.moveTo(0, canvas.height * 0.72);
-			ctx.lineTo(canvas.width, canvas.height * 0.72);
-			ctx.stroke();
-
-			// Draw buildings
-			cityBuildings.forEach(b => {
-				ctx.fillStyle = b.color;
-				ctx.fillRect(b.x, canvas.height * 0.55 - b.h, b.w, b.h);
-				
-				ctx.strokeStyle = '#1a1427';
-				ctx.lineWidth = 2;
-				ctx.strokeRect(b.x, canvas.height * 0.55 - b.h, b.w, b.h);
-
-				// Draw building windows (tiny dots)
-				ctx.fillStyle = 'rgba(255, 235, 59, 0.15)';
-				const rows = Math.floor(b.h / 30);
-				const cols = Math.floor(b.w / 25);
-				for (let r = 0; r < rows; r++) {
-					for (let c = 0; c < cols; c++) {
-						if ((r + c) % 3 === 0) { // structured window pattern
-							ctx.fillRect(b.x + 8 + c * 22, canvas.height * 0.55 - b.h + 10 + r * 25, 6, 8);
-						}
-					}
-				}
-
-				// Draw neon signboards with glow
-				if (b.sign) {
-					ctx.save();
-					ctx.shadowBlur = 10;
-					ctx.shadowColor = b.sign.color;
-					ctx.fillStyle = b.sign.color;
-
-					if (b.sign.vertical) {
-						const signX = b.x + b.w * 0.3;
-						const signY = canvas.height * 0.55 - b.h + 15;
-						ctx.fillRect(signX, signY, 18, b.sign.text.length * 16 + 10);
-
-						ctx.fillStyle = '#050308';
-						ctx.shadowBlur = 0;
-						ctx.font = 'bold 11px "Microsoft YaHei", sans-serif';
-						for (let i = 0; i < b.sign.text.length; i++) {
-							ctx.fillText(b.sign.text[i], signX + 3, signY + 15 + i * 16);
-						}
-					} else {
-						const signX = b.x + b.w * 0.15;
-						const signY = canvas.height * 0.55 - b.h + 15;
-						ctx.fillRect(signX, signY, b.w * 0.7, 22);
-
-						ctx.fillStyle = '#050308';
-						ctx.shadowBlur = 0;
-						ctx.font = 'bold 11px "Microsoft YaHei", sans-serif';
-						ctx.fillText(b.sign.text, signX + 6, signY + 15);
-					}
-					ctx.restore();
-				}
-			});
-		}
-
-		function drawMinibus(ctx) {
-			const x = busX;
-			const y = busY;
-
-			// Wheel bounce animation
-			const bounce = isBraking ? 0 : Math.sin(Date.now() * 0.02) * 1.5;
-
-			// Shadow
-			ctx.fillStyle = 'rgba(0,0,0,0.45)';
-			ctx.beginPath();
-			ctx.ellipse(x + 40, y + 45, 75, 12, 0, 0, Math.PI * 2);
-			ctx.fill();
-
-			// Minibus Body Outline (Red Minibus: white body with red roof)
-			ctx.fillStyle = '#f8f9fa'; // White body
-			ctx.beginPath();
-			ctx.roundRect(x - 35, y - 35 + bounce, 150, 70, [18, 25, 8, 8]);
-			ctx.fill();
-
-			// Red Roof Cover
-			ctx.fillStyle = '#d90429'; // Red roof
-			ctx.beginPath();
-			ctx.moveTo(x - 22, y - 35 + bounce);
-			ctx.lineTo(x + 110, y - 35 + bounce);
-			ctx.lineTo(x + 105, y - 20 + bounce);
-			ctx.lineTo(x - 25, y - 20 + bounce);
-			ctx.closePath();
-			ctx.fill();
-
-			// Windows
-			ctx.fillStyle = '#161a1d';
-			ctx.fillRect(x - 18, y - 16 + bounce, 24, 20); // Front window
-			ctx.fillRect(x + 14, y - 16 + bounce, 30, 20); // Middle window
-			ctx.fillRect(x + 52, y - 16 + bounce, 30, 20); // Back window
-
-			// Red stripe down side
-			ctx.fillStyle = '#d90429';
-			ctx.fillRect(x - 30, y + 10 + bounce, 142, 8);
-
-			// Wheels
-			ctx.fillStyle = '#1b1b1b';
-			ctx.strokeStyle = '#555';
-			ctx.lineWidth = 2;
-
-			ctx.beginPath();
-			ctx.arc(x + 5, y + 36 + bounce, 16, 0, Math.PI * 2);
-			ctx.arc(x + 85, y + 36 + bounce, 16, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-
-			// Wheel cap
-			ctx.fillStyle = '#d3d3d3';
-			ctx.beginPath();
-			ctx.arc(x + 5, y + 36 + bounce, 6, 0, Math.PI * 2);
-			ctx.arc(x + 85, y + 36 + bounce, 6, 0, Math.PI * 2);
-			ctx.fill();
-		}
-
-		function drawSignboard(ctx) {
-			const x = signX;
-			const y = signY;
-
-			// Post
-			ctx.strokeStyle = '#555';
-			ctx.lineWidth = 4;
-			ctx.beginPath();
-			ctx.moveTo(x, y);
-			ctx.lineTo(x, y + 120);
-			ctx.stroke();
-
-			// Red & White Target round sign
-			ctx.fillStyle = '#f8f9fa';
-			ctx.strokeStyle = '#d90429';
-			ctx.lineWidth = 5;
-			ctx.beginPath();
-			ctx.arc(x, y, 32, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-
-			// Destination name text
-			ctx.fillStyle = '#1a1a1a';
-			ctx.font = 'bold 15px "Microsoft YaHei", sans-serif';
-			ctx.textAlign = 'center';
-			ctx.fillText(signLabel, x, y + 5);
-
-			// Dashed Line Checkpoint
-			ctx.strokeStyle = 'rgba(255, 51, 51, 0.35)';
-			ctx.lineWidth = 2;
-			ctx.setLineDash([8, 6]);
-			ctx.beginPath();
-			ctx.moveTo(x, 0);
-			ctx.lineTo(x, canvas.height);
-			ctx.stroke();
-			ctx.setLineDash([]);
-		}
-
-		function updateParticles() {
-			for (let i = particles.length - 1; i >= 0; i--) {
-				const p = particles[i];
-				p.x += p.vx;
-				p.y += p.vy;
-				p.alpha -= p.decay;
-				if (p.alpha <= 0) {
-					particles.splice(i, 1);
-				}
-			}
-		}
-
-		// Draw smoke particles
-		function drawParticles(ctx) {
-			particles.forEach(p => {
-				ctx.save();
-				ctx.globalAlpha = p.alpha;
-				ctx.fillStyle = '#e5e5e5';
-				ctx.beginPath();
-				ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.restore();
-			});
-		}
-
-		function gameLoop() {
-			updateParticles();
-
-			// Apply screen shake
-			ctx.save();
-			if (screenShake > 0) {
-				const dx = (Math.random() - 0.5) * screenShake;
-				const dy = (Math.random() - 0.5) * screenShake;
-				ctx.translate(dx, dy);
-				screenShake *= 0.9;
-				if (screenShake < 0.5) screenShake = 0;
-			}
-
-			// Draw assets
-			drawScrollingBackground(ctx);
-			drawSignboard(ctx);
-			drawMinibus(ctx);
-			drawParticles(ctx);
-			ctx.restore();
-
-			// Game flow state logic
-			if (!isCamouflage) {
-				if (isBraking) {
-					// Bus is slowing down
-					speed = Math.max(0, speed - 0.25);
-					brakeTimer++;
-
-					if (speed === 0 && brakeTimer > 60) {
-						// Wait for passenger release, go next stop
-						setupNextStop();
-					}
-				} else {
-					// Sign moves left
-					signX -= speed;
-
-					// Check if missed stop
-					if (signX < busX - 50 && !isMissed) {
-						isMissed = true;
-						combo = 0;
-						comboDisplay.textContent = `Combo: 0`;
-						playSound('honk');
-						speakSentence("司機，過咗站啊！");
-					}
-
-					// Cycle back if missed sign goes completely off-screen
-					if (signX < -100) {
-						setupNextStop();
-					}
-				}
-			}
-
-			requestAnimationFrame(gameLoop);
-		}
-
-		// Space listener for camouflage
+		// Boss Key (Spacebar)
+		let isCamo = false;
 		window.addEventListener('keydown', (e) => {
-			if (e.code === 'Space') {
+			if (e.code === 'Space' && isCamo) {
 				e.preventDefault();
-				toggleCamouflage();
+				isCamo = false;
+				document.getElementById('camo-overlay').style.display = 'none';
+			} else if (e.code === 'KeyB') {
+				isCamo = true;
+				document.getElementById('camo-overlay').style.display = 'flex';
 			}
 		});
 
-		// Initialize
-		setupNextStop();
-		gameLoop();
+		// --- Three.js 3D Engine Setup ---
+		const container = document.getElementById('game-container');
+		const canvas = document.getElementById('game-canvas');
+
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(0x050308);
+		scene.fog = new THREE.FogExp2(0x050308, 0.025);
+
+		const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+		camera.position.set(0, 2.2, 5.5);
+		camera.lookAt(0, 1.0, -10);
+
+		const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+		renderer.setSize(container.clientWidth, container.clientHeight);
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+		window.addEventListener('resize', () => {
+			const w = container.clientWidth;
+			const h = container.clientHeight;
+			camera.aspect = w / h;
+			camera.updateProjectionMatrix();
+			renderer.setSize(w, h);
+		});
+
+		// Lighting
+		const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+		scene.add(ambient);
+
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		dirLight.position.set(0, 10, 5);
+		scene.add(dirLight);
+
+		// --- Highway Road Mesh ---
+		const roadGeo = new THREE.PlaneGeometry(8, 120);
+		const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1824, roughness: 0.8 });
+		const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+		roadMesh.rotation.x = -Math.PI / 2;
+		roadMesh.position.z = -50;
+		scene.add(roadMesh);
+
+		// Highway Lane Lines
+		const linesGroup = new THREE.Group();
+		for (let i = -100; i < 20; i += 6) {
+			const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+			l1.position.set(-1.3, 0.02, i);
+			const l2 = l1.clone();
+			l2.position.set(1.3, 0.02, i);
+			linesGroup.add(l1);
+			linesGroup.add(l2);
+		}
+		scene.add(linesGroup);
+
+		// --- 3D Red Minibus Player Model ---
+		const minibusGroup = new THREE.Group();
+
+		// Red Lower Body
+		const bodyGeo = new THREE.BoxGeometry(1.2, 0.7, 2.2);
+		const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.3 });
+		const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+		bodyMesh.position.y = 0.55;
+		minibusGroup.add(bodyMesh);
+
+		// White Roof
+		const roofGeo = new THREE.BoxGeometry(1.18, 0.5, 2.18);
+		const roofMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.3 });
+		const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+		roofMesh.position.y = 1.1;
+		minibusGroup.add(roofMesh);
+
+		// Headlights
+		const headLightL = new THREE.SpotLight(0xfffaed, 3, 25, 0.4);
+		headLightL.position.set(-0.4, 0.6, -1.1);
+		headLightL.target.position.set(-0.4, 0, -10);
+		minibusGroup.add(headLightL);
+		minibusGroup.add(headLightL.target);
+
+		const headLightR = headLightL.clone();
+		headLightR.position.x = 0.4;
+		headLightR.target.position.x = 0.4;
+		minibusGroup.add(headLightR);
+		minibusGroup.add(headLightR.target);
+
+		minibusGroup.position.set(0, 0, 0);
+		scene.add(minibusGroup);
+
+		// --- Traffic & Collectibles ---
+		const trafficVehicles = [];
+		const coinsList = [];
+
+		function spawnTraffic() {
+			if (trafficVehicles.length > 5) return;
+			const isTaxi = Math.random() > 0.4;
+			const vGeo = isTaxi ? new THREE.BoxGeometry(1.1, 0.6, 2.0) : new THREE.BoxGeometry(1.4, 1.4, 3.2);
+			const vMat = new THREE.MeshStandardMaterial({ color: isTaxi ? 0xd90429 : 0x0077b6 });
+			const mesh = new THREE.Mesh(vGeo, vMat);
+
+			const lanes = [-2.2, 0, 2.2];
+			mesh.position.set(lanes[Math.floor(Math.random() * lanes.length)], isTaxi ? 0.4 : 0.8, -70 - Math.random() * 30);
+			scene.add(mesh);
+			trafficVehicles.push(mesh);
+		}
+
+		function spawnCoin() {
+			if (coinsList.length > 6) return;
+			const cGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16);
+			const cMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+			const coin = new THREE.Mesh(cGeo, cMat);
+			coin.rotation.x = Math.PI / 2;
+			const lanes = [-2.2, 0, 2.2];
+			coin.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.5, -60 - Math.random() * 40);
+			scene.add(coin);
+			coinsList.push(coin);
+		}
+
+		// Input Handling
+		let moveLeft = false, moveRight = false;
+
+		window.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft = true;
+			if (e.key === 'ArrowRight' || e.key === 'd') moveRight = true;
+		});
+
+		window.addEventListener('keyup', (e) => {
+			if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft = false;
+			if (e.key === 'ArrowRight' || e.key === 'd') moveRight = false;
+		});
+
+		document.getElementById('btn-left').addEventListener('touchstart', () => moveLeft = true);
+		document.getElementById('btn-left').addEventListener('touchend', () => moveLeft = false);
+		document.getElementById('btn-right').addEventListener('touchstart', () => moveRight = true);
+		document.getElementById('btn-right').addEventListener('touchend', () => moveRight = false);
+
+		document.getElementById('btn-stop').addEventListener('click', handleDropOff);
+
+		function handleDropOff() {
+			if (STATE.stopRequired) {
+				STATE.stopRequired = false;
+				STATE.fare += 150;
+				playSound('coin');
+				updateHUD();
+			}
+		}
+
+		window.startGame = function() {
+			STATE.playing = true;
+			STATE.speed = 110;
+			STATE.fare = 0;
+			startModal.style.display = 'none';
+			updateHUD();
+		};
+
+		// --- Main Animation Loop ---
+		const clock = new THREE.Clock();
+
+		function animate() {
+			requestAnimationFrame(animate);
+			const delta = Math.min(clock.getDelta(), 0.1);
+
+			if (STATE.playing) {
+				// Minibus Steering
+				if (moveLeft && STATE.minibusX > -2.2) STATE.minibusX -= 4.5 * delta;
+				if (moveRight && STATE.minibusX < 2.2) STATE.minibusX += 4.5 * delta;
+
+				minibusGroup.position.x = STATE.minibusX;
+				minibusGroup.rotation.z = -(moveRight ? 1 : moveLeft ? -1 : 0) * 0.08;
+
+				// Move Road Lines
+				const moveDist = (STATE.speed * 0.3) * delta;
+				linesGroup.children.forEach(line => {
+					line.position.z += moveDist;
+					if (line.position.z > 10) line.position.z -= 100;
+				});
+
+				// Spawn elements
+				if (Math.random() < 0.03) spawnTraffic();
+				if (Math.random() < 0.04) spawnCoin();
+
+				// Move Traffic
+				for (let i = trafficVehicles.length - 1; i >= 0; i--) {
+					const v = trafficVehicles[i];
+					v.position.z += moveDist * 0.4;
+
+					// Collision Check with player
+					if (Math.abs(v.position.z - minibusGroup.position.z) < 1.8 &&
+						Math.abs(v.position.x - minibusGroup.position.x) < 1.0) {
+						playSound('crash');
+						STATE.speed = Math.max(50, STATE.speed - 30);
+						v.position.z = 20; // remove
+					}
+
+					if (v.position.z > 10) {
+						scene.remove(v);
+						trafficVehicles.splice(i, 1);
+					}
+				}
+
+				// Move Coins
+				for (let i = coinsList.length - 1; i >= 0; i--) {
+					const c = coinsList[i];
+					c.position.z += moveDist;
+					c.rotation.z += 3 * delta;
+
+					// Collection check
+					if (Math.abs(c.position.z - minibusGroup.position.z) < 1.5 &&
+						Math.abs(c.position.x - minibusGroup.position.x) < 0.9) {
+						playSound('coin');
+						STATE.fare += 20;
+						scene.remove(c);
+						coinsList.splice(i, 1);
+						updateHUD();
+					} else if (c.position.z > 10) {
+						scene.remove(c);
+						coinsList.splice(i, 1);
+					}
+				}
+
+				// Random Stop Announcements
+				if (!STATE.stopRequired && Math.random() < 0.003) {
+					STATE.stopRequired = true;
+					playSound('engine');
+					updateHUD();
+				}
+
+				// Auto speed recovery
+				if (STATE.speed < 120) STATE.speed += 5 * delta;
+			}
+
+			renderer.render(scene, camera);
+		}
+
+		animate();
+		updateHUD();
+
 	</script>
 </body>
 </html>
