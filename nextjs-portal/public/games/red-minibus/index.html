@@ -243,7 +243,8 @@
 		<div class="start-overlay" id="start-modal">
 			<div class="start-title">亡 命 紅 V a n 大 挑 戰 3D</div>
 			<div style="max-width: 500px; line-height: 1.6; color: #ccc;">
-				深夜極速行駛屯門公路！閃避的士與雙層巴士，收集車資金幣，並在乘客叫喊「有落」時即時剎車！
+				駕駛經典紅巴 (Toyota Coaster)，在屯門公路夜間極速飆車！<br>
+				避開香港紅色的士與雙層巴士，收集車資，並在乘客叫喊「有落」時即時剎車！
 			</div>
 			<button class="start-btn" onclick="startGame()">🚀 亡命開車！</button>
 		</div>
@@ -306,8 +307,8 @@
 				} else if (type === 'coin') {
 					const osc = audioCtx.createOscillator();
 					osc.type = 'sine';
-					osc.frequency.setValueAtTime(987.77, now); // B5
-					osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+					osc.frequency.setValueAtTime(987.77, now);
+					osc.frequency.setValueAtTime(1318.51, now + 0.08);
 					const gain = audioCtx.createGain();
 					gain.gain.setValueAtTime(0.2, now);
 					gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
@@ -330,9 +331,9 @@
 		// Game State
 		const STATE = {
 			playing: false,
-			speed: 110, // km/h
+			speed: 110,
 			fare: 0,
-			minibusX: 0, // -1.8 to 1.8
+			minibusX: 0,
 			stopRequired: false,
 			stopTimer: 0
 		};
@@ -372,8 +373,8 @@
 		scene.fog = new THREE.FogExp2(0x050308, 0.025);
 
 		const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-		camera.position.set(0, 2.2, 5.5);
-		camera.lookAt(0, 1.0, -10);
+		camera.position.set(0, 2.5, 5.8);
+		camera.lookAt(0, 1.1, -10);
 
 		const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
 		renderer.setSize(container.clientWidth, container.clientHeight);
@@ -388,15 +389,15 @@
 		});
 
 		// Lighting
-		const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+		const ambient = new THREE.AmbientLight(0xffffff, 0.6);
 		scene.add(ambient);
 
-		const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
 		dirLight.position.set(0, 10, 5);
 		scene.add(dirLight);
 
 		// --- Highway Road Mesh ---
-		const roadGeo = new THREE.PlaneGeometry(8, 120);
+		const roadGeo = new THREE.PlaneGeometry(8.5, 120);
 		const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1824, roughness: 0.8 });
 		const roadMesh = new THREE.Mesh(roadGeo, roadMat);
 		roadMesh.rotation.x = -Math.PI / 2;
@@ -406,72 +407,214 @@
 		// Highway Lane Lines
 		const linesGroup = new THREE.Group();
 		for (let i = -100; i < 20; i += 6) {
-			const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-			l1.position.set(-1.3, 0.02, i);
+			const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+			l1.position.set(-1.4, 0.02, i);
 			const l2 = l1.clone();
-			l2.position.set(1.3, 0.02, i);
+			l2.position.set(1.4, 0.02, i);
 			linesGroup.add(l1);
 			linesGroup.add(l2);
 		}
 		scene.add(linesGroup);
 
-		// --- 3D Red Minibus Player Model ---
-		const minibusGroup = new THREE.Group();
+		// Helper: Wheel Generator
+		function createWheel(x, y, z) {
+			const wGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.16, 16);
+			wGeo.rotateZ(Math.PI / 2);
+			const wMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+			const wheel = new THREE.Mesh(wGeo, wMat);
+			wheel.position.set(x, y, z);
+			return wheel;
+		}
 
-		// Red Lower Body
-		const bodyGeo = new THREE.BoxGeometry(1.2, 0.7, 2.2);
-		const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.3 });
-		const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-		bodyMesh.position.y = 0.55;
-		minibusGroup.add(bodyMesh);
+		// --- 3D Red Minibus (Toyota Coaster) Model Builder ---
+		function createRedMinibus() {
+			const bus = new THREE.Group();
 
-		// White Roof
-		const roofGeo = new THREE.BoxGeometry(1.18, 0.5, 2.18);
-		const roofMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.3 });
-		const roofMesh = new THREE.Mesh(roofGeo, roofMat);
-		roofMesh.position.y = 1.1;
-		minibusGroup.add(roofMesh);
+			// Red Lower Body
+			const lowerBodyGeo = new THREE.BoxGeometry(1.25, 0.65, 2.4);
+			const lowerBodyMat = new THREE.MeshStandardMaterial({ color: 0xc1121f, roughness: 0.3 });
+			const lowerBody = new THREE.Mesh(lowerBodyGeo, lowerBodyMat);
+			lowerBody.position.y = 0.55;
+			bus.add(lowerBody);
 
-		// Headlights
-		const headLightL = new THREE.SpotLight(0xfffaed, 3, 25, 0.4);
-		headLightL.position.set(-0.4, 0.6, -1.1);
-		headLightL.target.position.set(-0.4, 0, -10);
-		minibusGroup.add(headLightL);
-		minibusGroup.add(headLightL.target);
+			// Cream-White Upper Cabin
+			const cabinGeo = new THREE.BoxGeometry(1.22, 0.55, 2.38);
+			const cabinMat = new THREE.MeshStandardMaterial({ color: 0xfff8e7, roughness: 0.3 });
+			const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+			cabin.position.y = 1.15;
+			bus.add(cabin);
 
-		const headLightR = headLightL.clone();
-		headLightR.position.x = 0.4;
-		headLightR.target.position.x = 0.4;
-		minibusGroup.add(headLightR);
-		minibusGroup.add(headLightR.target);
+			// Dark Tinted Windows
+			const winGeo = new THREE.BoxGeometry(1.24, 0.38, 2.1);
+			const winMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.1, transparent: true, opacity: 0.85 });
+			const windows = new THREE.Mesh(winGeo, winMat);
+			windows.position.y = 1.18;
+			bus.add(windows);
 
-		minibusGroup.position.set(0, 0, 0);
+			// Iconic Green Destination Box on Roof ("旺角 MONG KOK")
+			const signGeo = new THREE.BoxGeometry(0.7, 0.22, 0.15);
+			const signMat = new THREE.MeshStandardMaterial({ color: 0x00cc66, emissive: 0x004d26, roughness: 0.2 });
+			const sign = new THREE.Mesh(signGeo, signMat);
+			sign.position.set(0, 1.5, -1.05);
+			bus.add(sign);
+
+			// Headlight Beams
+			const headLightL = new THREE.SpotLight(0xfffaed, 3.5, 30, 0.45);
+			headLightL.position.set(-0.45, 0.6, -1.2);
+			headLightL.target.position.set(-0.45, 0, -10);
+			bus.add(headLightL);
+			bus.add(headLightL.target);
+
+			const headLightR = headLightL.clone();
+			headLightR.position.x = 0.45;
+			headLightR.target.position.x = 0.45;
+			bus.add(headLightR);
+			bus.add(headLightR.target);
+
+			// 4 Wheels
+			bus.add(createWheel(-0.62, 0.22, -0.75));
+			bus.add(createWheel(0.62, 0.22, -0.75));
+			bus.add(createWheel(-0.62, 0.22, 0.75));
+			bus.add(createWheel(0.62, 0.22, 0.75));
+
+			return bus;
+		}
+
+		const minibusGroup = createRedMinibus();
 		scene.add(minibusGroup);
 
-		// --- Traffic & Collectibles ---
+		// --- 3D Hong Kong Double-Decker Bus (KMB 雙層巴士) Model Builder ---
+		function createDoubleDeckerBus() {
+			const bus = new THREE.Group();
+
+			// Main Tall Body (2 Decks)
+			const bodyGeo = new THREE.BoxGeometry(1.4, 2.1, 3.8);
+			const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.4 });
+			const body = new THREE.Mesh(bodyGeo, bodyMat);
+			body.position.y = 1.25;
+			bus.add(body);
+
+			// Lower Deck Windows
+			const winLowGeo = new THREE.BoxGeometry(1.42, 0.45, 3.4);
+			const winMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
+			const winLow = new THREE.Mesh(winLowGeo, winMat);
+			winLow.position.y = 0.9;
+			bus.add(winLow);
+
+			// Upper Deck Windows
+			const winUpGeo = new THREE.BoxGeometry(1.42, 0.5, 3.4);
+			const winUp = new THREE.Mesh(winUpGeo, winMat);
+			winUp.position.y = 1.75;
+			bus.add(winUp);
+
+			// Electronic Destination Signboard
+			const destGeo = new THREE.BoxGeometry(0.9, 0.25, 0.1);
+			const destMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+			const dest = new THREE.Mesh(destGeo, destMat);
+			dest.position.set(0, 2.05, 1.86);
+			bus.add(dest);
+
+			// 6 Wheels
+			bus.add(createWheel(-0.7, 0.22, -1.2));
+			bus.add(createWheel(0.7, 0.22, -1.2));
+			bus.add(createWheel(-0.7, 0.22, 0.8));
+			bus.add(createWheel(0.7, 0.22, 0.8));
+			bus.add(createWheel(-0.7, 0.22, 1.3));
+			bus.add(createWheel(0.7, 0.22, 1.3));
+
+			return bus;
+		}
+
+		// --- 3D Hong Kong Urban Red Taxi (Toyota Comfort) Model Builder ---
+		function createHKTaxi() {
+			const taxi = new THREE.Group();
+
+			// Red Lower Body
+			const bodyGeo = new THREE.BoxGeometry(1.15, 0.5, 2.2);
+			const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.3 });
+			const body = new THREE.Mesh(bodyGeo, bodyMat);
+			body.position.y = 0.45;
+			taxi.add(body);
+
+			// Silver / White Roof
+			const roofGeo = new THREE.BoxGeometry(1.05, 0.42, 1.2);
+			const roofMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.3 });
+			const roof = new THREE.Mesh(roofGeo, roofMat);
+			roof.position.set(0, 0.85, 0.1);
+			taxi.add(roof);
+
+			// Roof Signbox ("TAXI 的士")
+			const signGeo = new THREE.BoxGeometry(0.4, 0.12, 0.18);
+			const signMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+			const sign = new THREE.Mesh(signGeo, signMat);
+			sign.position.set(0, 1.12, 0.1);
+			taxi.add(sign);
+
+			// 4 Wheels
+			taxi.add(createWheel(-0.58, 0.22, -0.65));
+			taxi.add(createWheel(0.58, 0.22, -0.65));
+			taxi.add(createWheel(-0.58, 0.22, 0.65));
+			taxi.add(createWheel(0.58, 0.22, 0.65));
+
+			return taxi;
+		}
+
+		// --- 3D Private Sedan Car Model Builder ---
+		function createSedan() {
+			const car = new THREE.Group();
+
+			// Body
+			const bodyGeo = new THREE.BoxGeometry(1.15, 0.45, 2.3);
+			const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0077b6, metalness: 0.6, roughness: 0.2 });
+			const body = new THREE.Mesh(bodyGeo, bodyMat);
+			body.position.y = 0.42;
+			car.add(body);
+
+			// Cabin Roof
+			const cabinGeo = new THREE.BoxGeometry(1.02, 0.42, 1.2);
+			const cabin = new THREE.Mesh(cabinGeo, bodyMat);
+			cabin.position.set(0, 0.8, -0.1);
+			car.add(cabin);
+
+			// 4 Wheels
+			car.add(createWheel(-0.58, 0.2, -0.7));
+			car.add(createWheel(0.58, 0.2, -0.7));
+			car.add(createWheel(-0.58, 0.2, 0.7));
+			car.add(createWheel(0.58, 0.2, 0.7));
+
+			return car;
+		}
+
+		// --- Traffic Spawner ---
 		const trafficVehicles = [];
 		const coinsList = [];
 
 		function spawnTraffic() {
 			if (trafficVehicles.length > 5) return;
-			const isTaxi = Math.random() > 0.4;
-			const vGeo = isTaxi ? new THREE.BoxGeometry(1.1, 0.6, 2.0) : new THREE.BoxGeometry(1.4, 1.4, 3.2);
-			const vMat = new THREE.MeshStandardMaterial({ color: isTaxi ? 0xd90429 : 0x0077b6 });
-			const mesh = new THREE.Mesh(vGeo, vMat);
+			const type = Math.random();
+			let vehicle;
 
-			const lanes = [-2.2, 0, 2.2];
-			mesh.position.set(lanes[Math.floor(Math.random() * lanes.length)], isTaxi ? 0.4 : 0.8, -70 - Math.random() * 30);
-			scene.add(mesh);
-			trafficVehicles.push(mesh);
+			if (type < 0.4) {
+				vehicle = createHKTaxi(); // 40% Hong Kong Taxi
+			} else if (type < 0.75) {
+				vehicle = createDoubleDeckerBus(); // 35% KMB Double Decker Bus
+			} else {
+				vehicle = createSedan(); // 25% Private Sedan
+			}
+
+			const lanes = [-2.4, 0, 2.4];
+			vehicle.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0, -70 - Math.random() * 30);
+			scene.add(vehicle);
+			trafficVehicles.push(vehicle);
 		}
 
 		function spawnCoin() {
 			if (coinsList.length > 6) return;
-			const cGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16);
+			const cGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.06, 16);
 			const cMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
 			const coin = new THREE.Mesh(cGeo, cMat);
 			coin.rotation.x = Math.PI / 2;
-			const lanes = [-2.2, 0, 2.2];
+			const lanes = [-2.4, 0, 2.4];
 			coin.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.5, -60 - Math.random() * 40);
 			scene.add(coin);
 			coinsList.push(coin);
@@ -523,14 +666,14 @@
 
 			if (STATE.playing) {
 				// Minibus Steering
-				if (moveLeft && STATE.minibusX > -2.2) STATE.minibusX -= 4.5 * delta;
-				if (moveRight && STATE.minibusX < 2.2) STATE.minibusX += 4.5 * delta;
+				if (moveLeft && STATE.minibusX > -2.4) STATE.minibusX -= 4.8 * delta;
+				if (moveRight && STATE.minibusX < 2.4) STATE.minibusX += 4.8 * delta;
 
 				minibusGroup.position.x = STATE.minibusX;
 				minibusGroup.rotation.z = -(moveRight ? 1 : moveLeft ? -1 : 0) * 0.08;
 
 				// Move Road Lines
-				const moveDist = (STATE.speed * 0.3) * delta;
+				const moveDist = (STATE.speed * 0.32) * delta;
 				linesGroup.children.forEach(line => {
 					line.position.z += moveDist;
 					if (line.position.z > 10) line.position.z -= 100;
@@ -543,14 +686,14 @@
 				// Move Traffic
 				for (let i = trafficVehicles.length - 1; i >= 0; i--) {
 					const v = trafficVehicles[i];
-					v.position.z += moveDist * 0.4;
+					v.position.z += moveDist * 0.38;
 
 					// Collision Check with player
-					if (Math.abs(v.position.z - minibusGroup.position.z) < 1.8 &&
-						Math.abs(v.position.x - minibusGroup.position.x) < 1.0) {
+					if (Math.abs(v.position.z - minibusGroup.position.z) < 2.0 &&
+						Math.abs(v.position.x - minibusGroup.position.x) < 1.1) {
 						playSound('crash');
 						STATE.speed = Math.max(50, STATE.speed - 30);
-						v.position.z = 20; // remove
+						v.position.z = 20;
 					}
 
 					if (v.position.z > 10) {
@@ -566,8 +709,8 @@
 					c.rotation.z += 3 * delta;
 
 					// Collection check
-					if (Math.abs(c.position.z - minibusGroup.position.z) < 1.5 &&
-						Math.abs(c.position.x - minibusGroup.position.x) < 0.9) {
+					if (Math.abs(c.position.z - minibusGroup.position.z) < 1.6 &&
+						Math.abs(c.position.x - minibusGroup.position.x) < 1.0) {
 						playSound('coin');
 						STATE.fare += 20;
 						scene.remove(c);
@@ -587,7 +730,7 @@
 				}
 
 				// Auto speed recovery
-				if (STATE.speed < 120) STATE.speed += 5 * delta;
+				if (STATE.speed < 130) STATE.speed += 6 * delta;
 			}
 
 			renderer.render(scene, camera);
