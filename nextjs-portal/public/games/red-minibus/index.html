@@ -370,11 +370,12 @@
 
 		const scene = new THREE.Scene();
 		scene.background = new THREE.Color(0x050308);
-		scene.fog = new THREE.FogExp2(0x050308, 0.025);
+		scene.fog = new THREE.FogExp2(0x050308, 0.022);
 
+		// Elevated 3D Chase Camera Angle (Slightly behind, above, and offset to show 3D depth!)
 		const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-		camera.position.set(0, 2.5, 5.8);
-		camera.lookAt(0, 1.1, -10);
+		camera.position.set(1.8, 4.2, 6.8);
+		camera.lookAt(0, 0.6, -3.5);
 
 		const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
 		renderer.setSize(container.clientWidth, container.clientHeight);
@@ -389,16 +390,26 @@
 		});
 
 		// Lighting
-		const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+		const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 		scene.add(ambient);
 
-		const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-		dirLight.position.set(0, 10, 5);
+		const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+		dirLight.position.set(5, 12, 6);
 		scene.add(dirLight);
+
+		// Neon Street Lights along highway
+		const neonPink = new THREE.PointLight(0xff3366, 1.5, 15);
+		neonPink.position.set(-4, 3, -10);
+		scene.add(neonPink);
+
+		const neonCyan = new THREE.PointLight(0x00f0ff, 1.5, 15);
+		cyanLight = neonCyan;
+		neonCyan.position.set(4, 3, -25);
+		scene.add(neonCyan);
 
 		// --- Highway Road Mesh ---
 		const roadGeo = new THREE.PlaneGeometry(8.5, 120);
-		const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1824, roughness: 0.8 });
+		const roadMat = new THREE.MeshStandardMaterial({ color: 0x181622, roughness: 0.8 });
 		const roadMesh = new THREE.Mesh(roadGeo, roadMat);
 		roadMesh.rotation.x = -Math.PI / 2;
 		roadMesh.position.z = -50;
@@ -418,7 +429,7 @@
 
 		// Helper: Wheel Generator
 		function createWheel(x, y, z) {
-			const wGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.16, 16);
+			const wGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.18, 16);
 			wGeo.rotateZ(Math.PI / 2);
 			const wMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
 			const wheel = new THREE.Mesh(wGeo, wMat);
@@ -426,56 +437,70 @@
 			return wheel;
 		}
 
-		// --- 3D Red Minibus (Toyota Coaster) Model Builder ---
+		// --- 3D Red Minibus (Toyota Coaster) Detailed Model Builder ---
 		function createRedMinibus() {
 			const bus = new THREE.Group();
 
 			// Red Lower Body
-			const lowerBodyGeo = new THREE.BoxGeometry(1.25, 0.65, 2.4);
+			const lowerBodyGeo = new THREE.BoxGeometry(1.3, 0.7, 2.5);
 			const lowerBodyMat = new THREE.MeshStandardMaterial({ color: 0xc1121f, roughness: 0.3 });
 			const lowerBody = new THREE.Mesh(lowerBodyGeo, lowerBodyMat);
 			lowerBody.position.y = 0.55;
 			bus.add(lowerBody);
 
 			// Cream-White Upper Cabin
-			const cabinGeo = new THREE.BoxGeometry(1.22, 0.55, 2.38);
+			const cabinGeo = new THREE.BoxGeometry(1.26, 0.6, 2.48);
 			const cabinMat = new THREE.MeshStandardMaterial({ color: 0xfff8e7, roughness: 0.3 });
 			const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-			cabin.position.y = 1.15;
+			cabin.position.y = 1.2;
 			bus.add(cabin);
 
 			// Dark Tinted Windows
-			const winGeo = new THREE.BoxGeometry(1.24, 0.38, 2.1);
+			const winGeo = new THREE.BoxGeometry(1.28, 0.4, 2.2);
 			const winMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.1, transparent: true, opacity: 0.85 });
 			const windows = new THREE.Mesh(winGeo, winMat);
-			windows.position.y = 1.18;
+			windows.position.y = 1.25;
 			bus.add(windows);
 
-			// Iconic Green Destination Box on Roof ("旺角 MONG KOK")
-			const signGeo = new THREE.BoxGeometry(0.7, 0.22, 0.15);
-			const signMat = new THREE.MeshStandardMaterial({ color: 0x00cc66, emissive: 0x004d26, roughness: 0.2 });
+			// Green Acrylic Destination Box on Roof ("旺角 MONG KOK")
+			const signGeo = new THREE.BoxGeometry(0.75, 0.24, 0.16);
+			const signMat = new THREE.MeshStandardMaterial({ color: 0x00cc66, emissive: 0x006633, roughness: 0.2 });
 			const sign = new THREE.Mesh(signGeo, signMat);
-			sign.position.set(0, 1.5, -1.05);
+			sign.position.set(0, 1.58, -1.1);
 			bus.add(sign);
 
-			// Headlight Beams
-			const headLightL = new THREE.SpotLight(0xfffaed, 3.5, 30, 0.45);
-			headLightL.position.set(-0.45, 0.6, -1.2);
-			headLightL.target.position.set(-0.45, 0, -10);
-			bus.add(headLightL);
-			bus.add(headLightL.target);
+			// Side Mirrors
+			const mirrorGeo = new THREE.BoxGeometry(0.18, 0.12, 0.25);
+			const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+			const mirrorL = new THREE.Mesh(mirrorGeo, mirrorMat);
+			mirrorL.position.set(-0.72, 1.1, -0.9);
+			bus.add(mirrorL);
+			const mirrorR = mirrorL.clone();
+			mirrorR.position.x = 0.72;
+			bus.add(mirrorR);
 
-			const headLightR = headLightL.clone();
-			headLightR.position.x = 0.45;
-			headLightR.target.position.x = 0.45;
-			bus.add(headLightR);
-			bus.add(headLightR.target);
+			// Rear Red Taillights
+			const tailGeo = new THREE.BoxGeometry(0.2, 0.15, 0.05);
+			const tailMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+			const tailL = new THREE.Mesh(tailGeo, tailMat);
+			tailL.position.set(-0.45, 0.55, 1.26);
+			bus.add(tailL);
+			const tailR = tailL.clone();
+			tailR.position.x = 0.45;
+			bus.add(tailR);
+
+			// Rear Yellow HK License Plate
+			const plateGeo = new THREE.BoxGeometry(0.35, 0.12, 0.04);
+			const plateMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+			const plate = new THREE.Mesh(plateGeo, plateMat);
+			plate.position.set(0, 0.4, 1.26);
+			bus.add(plate);
 
 			// 4 Wheels
-			bus.add(createWheel(-0.62, 0.22, -0.75));
-			bus.add(createWheel(0.62, 0.22, -0.75));
-			bus.add(createWheel(-0.62, 0.22, 0.75));
-			bus.add(createWheel(0.62, 0.22, 0.75));
+			bus.add(createWheel(-0.64, 0.24, -0.8));
+			bus.add(createWheel(0.64, 0.24, -0.8));
+			bus.add(createWheel(-0.64, 0.24, 0.8));
+			bus.add(createWheel(0.64, 0.24, 0.8));
 
 			return bus;
 		}
@@ -483,104 +508,123 @@
 		const minibusGroup = createRedMinibus();
 		scene.add(minibusGroup);
 
-		// --- 3D Hong Kong Double-Decker Bus (KMB 雙層巴士) Model Builder ---
+		// --- 3D Hong Kong Double-Decker Bus (KMB 九巴雙層巴士) ---
 		function createDoubleDeckerBus() {
 			const bus = new THREE.Group();
 
 			// Main Tall Body (2 Decks)
-			const bodyGeo = new THREE.BoxGeometry(1.4, 2.1, 3.8);
-			const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.4 });
+			const bodyGeo = new THREE.BoxGeometry(1.5, 2.2, 3.8);
+			const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.4, roughness: 0.3 }); // Gold / Red KMB Body
 			const body = new THREE.Mesh(bodyGeo, bodyMat);
-			body.position.y = 1.25;
+			body.position.y = 1.3;
 			bus.add(body);
 
 			// Lower Deck Windows
-			const winLowGeo = new THREE.BoxGeometry(1.42, 0.45, 3.4);
+			const winLowGeo = new THREE.BoxGeometry(1.52, 0.48, 3.4);
 			const winMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
 			const winLow = new THREE.Mesh(winLowGeo, winMat);
-			winLow.position.y = 0.9;
+			winLow.position.y = 0.95;
 			bus.add(winLow);
 
 			// Upper Deck Windows
-			const winUpGeo = new THREE.BoxGeometry(1.42, 0.5, 3.4);
+			const winUpGeo = new THREE.BoxGeometry(1.52, 0.52, 3.4);
 			const winUp = new THREE.Mesh(winUpGeo, winMat);
-			winUp.position.y = 1.75;
+			winUp.position.y = 1.85;
 			bus.add(winUp);
 
-			// Electronic Destination Signboard
-			const destGeo = new THREE.BoxGeometry(0.9, 0.25, 0.1);
-			const destMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-			const dest = new THREE.Mesh(destGeo, destMat);
-			dest.position.set(0, 2.05, 1.86);
-			bus.add(dest);
+			// Electronic LED Destination Display ("九龍城 KOWLOON CITY")
+			const destGeo = new THREE.BoxGeometry(0.95, 0.28, 0.1);
+			const destMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+			const destFront = new THREE.Mesh(destGeo, destMat);
+			destFront.position.set(0, 2.15, -1.86);
+			bus.add(destFront);
+
+			const destRear = destFront.clone();
+			destRear.position.z = 1.86;
+			bus.add(destRear);
+
+			// Rear Red Taillights
+			const tailMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+			const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.05), tailMat);
+			tailL.position.set(-0.55, 0.6, 1.91);
+			bus.add(tailL);
+			const tailR = tailL.clone();
+			tailR.position.x = 0.55;
+			bus.add(tailR);
 
 			// 6 Wheels
-			bus.add(createWheel(-0.7, 0.22, -1.2));
-			bus.add(createWheel(0.7, 0.22, -1.2));
-			bus.add(createWheel(-0.7, 0.22, 0.8));
-			bus.add(createWheel(0.7, 0.22, 0.8));
-			bus.add(createWheel(-0.7, 0.22, 1.3));
-			bus.add(createWheel(0.7, 0.22, 1.3));
+			bus.add(createWheel(-0.74, 0.24, -1.2));
+			bus.add(createWheel(0.74, 0.24, -1.2));
+			bus.add(createWheel(-0.74, 0.24, 0.8));
+			bus.add(createWheel(0.74, 0.24, 0.8));
+			bus.add(createWheel(-0.74, 0.24, 1.35));
+			bus.add(createWheel(0.74, 0.24, 1.35));
 
 			return bus;
 		}
 
-		// --- 3D Hong Kong Urban Red Taxi (Toyota Comfort) Model Builder ---
+		// --- 3D Hong Kong Urban Red Taxi (Toyota Comfort 市區紅色的士) ---
 		function createHKTaxi() {
 			const taxi = new THREE.Group();
 
 			// Red Lower Body
-			const bodyGeo = new THREE.BoxGeometry(1.15, 0.5, 2.2);
+			const bodyGeo = new THREE.BoxGeometry(1.2, 0.52, 2.3);
 			const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.3 });
 			const body = new THREE.Mesh(bodyGeo, bodyMat);
-			body.position.y = 0.45;
+			body.position.y = 0.48;
 			taxi.add(body);
 
 			// Silver / White Roof
-			const roofGeo = new THREE.BoxGeometry(1.05, 0.42, 1.2);
+			const roofGeo = new THREE.BoxGeometry(1.08, 0.45, 1.25);
 			const roofMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.3 });
 			const roof = new THREE.Mesh(roofGeo, roofMat);
-			roof.position.set(0, 0.85, 0.1);
+			roof.position.set(0, 0.9, 0.1);
 			taxi.add(roof);
 
-			// Roof Signbox ("TAXI 的士")
-			const signGeo = new THREE.BoxGeometry(0.4, 0.12, 0.18);
-			const signMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+			// Roof Lightbox ("TAXI 的士")
+			const signGeo = new THREE.BoxGeometry(0.42, 0.14, 0.2);
+			const signMat = new THREE.MeshBasicMaterial({ color: 0xfff0aa });
 			const sign = new THREE.Mesh(signGeo, signMat);
-			sign.position.set(0, 1.12, 0.1);
+			sign.position.set(0, 1.18, 0.1);
 			taxi.add(sign);
 
+			// Rear Red Taillights
+			const tailMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+			const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.05), tailMat);
+			tailL.position.set(-0.42, 0.48, 1.16);
+			taxi.add(tailL);
+			const tailR = tailL.clone();
+			tailR.position.x = 0.42;
+			taxi.add(tailR);
+
 			// 4 Wheels
-			taxi.add(createWheel(-0.58, 0.22, -0.65));
-			taxi.add(createWheel(0.58, 0.22, -0.65));
-			taxi.add(createWheel(-0.58, 0.22, 0.65));
-			taxi.add(createWheel(0.58, 0.22, 0.65));
+			taxi.add(createWheel(-0.6, 0.22, -0.68));
+			taxi.add(createWheel(0.6, 0.22, -0.68));
+			taxi.add(createWheel(-0.6, 0.22, 0.68));
+			taxi.add(createWheel(0.6, 0.22, 0.68));
 
 			return taxi;
 		}
 
-		// --- 3D Private Sedan Car Model Builder ---
+		// --- 3D Private Sedan Car ---
 		function createSedan() {
 			const car = new THREE.Group();
 
-			// Body
-			const bodyGeo = new THREE.BoxGeometry(1.15, 0.45, 2.3);
-			const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0077b6, metalness: 0.6, roughness: 0.2 });
+			const bodyGeo = new THREE.BoxGeometry(1.2, 0.48, 2.4);
+			const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0077b6, metalness: 0.7, roughness: 0.2 });
 			const body = new THREE.Mesh(bodyGeo, bodyMat);
-			body.position.y = 0.42;
+			body.position.y = 0.45;
 			car.add(body);
 
-			// Cabin Roof
-			const cabinGeo = new THREE.BoxGeometry(1.02, 0.42, 1.2);
+			const cabinGeo = new THREE.BoxGeometry(1.05, 0.44, 1.25);
 			const cabin = new THREE.Mesh(cabinGeo, bodyMat);
-			cabin.position.set(0, 0.8, -0.1);
+			cabin.position.set(0, 0.85, -0.1);
 			car.add(cabin);
 
-			// 4 Wheels
-			car.add(createWheel(-0.58, 0.2, -0.7));
-			car.add(createWheel(0.58, 0.2, -0.7));
-			car.add(createWheel(-0.58, 0.2, 0.7));
-			car.add(createWheel(0.58, 0.2, 0.7));
+			car.add(createWheel(-0.6, 0.22, -0.72));
+			car.add(createWheel(0.6, 0.22, -0.72));
+			car.add(createWheel(-0.6, 0.22, 0.72));
+			car.add(createWheel(0.6, 0.22, 0.72));
 
 			return car;
 		}
@@ -595,11 +639,11 @@
 			let vehicle;
 
 			if (type < 0.4) {
-				vehicle = createHKTaxi(); // 40% Hong Kong Taxi
+				vehicle = createHKTaxi(); // 40% HK Taxi
 			} else if (type < 0.75) {
-				vehicle = createDoubleDeckerBus(); // 35% KMB Double Decker Bus
+				vehicle = createDoubleDeckerBus(); // 35% KMB Bus
 			} else {
-				vehicle = createSedan(); // 25% Private Sedan
+				vehicle = createSedan(); // 25% Private Car
 			}
 
 			const lanes = [-2.4, 0, 2.4];
@@ -610,12 +654,12 @@
 
 		function spawnCoin() {
 			if (coinsList.length > 6) return;
-			const cGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.06, 16);
-			const cMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+			const cGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16);
+			const cMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.2 });
 			const coin = new THREE.Mesh(cGeo, cMat);
 			coin.rotation.x = Math.PI / 2;
 			const lanes = [-2.4, 0, 2.4];
-			coin.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.5, -60 - Math.random() * 40);
+			coin.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.55, -60 - Math.random() * 40);
 			scene.add(coin);
 			coinsList.push(coin);
 		}
@@ -665,12 +709,21 @@
 			const delta = Math.min(clock.getDelta(), 0.1);
 
 			if (STATE.playing) {
-				// Minibus Steering
-				if (moveLeft && STATE.minibusX > -2.4) STATE.minibusX -= 4.8 * delta;
-				if (moveRight && STATE.minibusX < 2.4) STATE.minibusX += 4.8 * delta;
+				// Minibus Steering & Yaw Rotation
+				let steerDir = 0;
+				if (moveLeft && STATE.minibusX > -2.4) {
+					STATE.minibusX -= 4.8 * delta;
+					steerDir = -1;
+				}
+				if (moveRight && STATE.minibusX < 2.4) {
+					STATE.minibusX += 4.8 * delta;
+					steerDir = 1;
+				}
 
 				minibusGroup.position.x = STATE.minibusX;
-				minibusGroup.rotation.z = -(moveRight ? 1 : moveLeft ? -1 : 0) * 0.08;
+				// Bank & Yaw the minibus so you see its 3D side & front profile when turning!
+				minibusGroup.rotation.y = -steerDir * 0.22;
+				minibusGroup.rotation.z = -steerDir * 0.10;
 
 				// Move Road Lines
 				const moveDist = (STATE.speed * 0.32) * delta;
@@ -689,8 +742,8 @@
 					v.position.z += moveDist * 0.38;
 
 					// Collision Check with player
-					if (Math.abs(v.position.z - minibusGroup.position.z) < 2.0 &&
-						Math.abs(v.position.x - minibusGroup.position.x) < 1.1) {
+					if (Math.abs(v.position.z - minibusGroup.position.z) < 2.2 &&
+						Math.abs(v.position.x - minibusGroup.position.x) < 1.2) {
 						playSound('crash');
 						STATE.speed = Math.max(50, STATE.speed - 30);
 						v.position.z = 20;
